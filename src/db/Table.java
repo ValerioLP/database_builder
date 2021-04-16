@@ -18,6 +18,7 @@ public class Table {
         private String name;
 
         private List<Attribute> attributes = new ArrayList<>();
+
         private List<Vincolo> vincoli = new ArrayList<>();
 
         /**
@@ -44,7 +45,7 @@ public class Table {
          * @param vincolo prende in input un vincolo, formato dall'attributo vincolato, la tabella
          * referenziata e la foreign key
          * @return ritorna l'istanza del table builder
-         * @throws IllegalArgumentException controlla se l'attributo vincolato Ë presente o no nella
+         * @throws IllegalArgumentException controlla se l'attributo vincolato √® presente o no nella
          * tabella
          */        
         public TableBuilder addVincolo(Vincolo vincolo)throws IllegalArgumentException {        	
@@ -55,7 +56,7 @@ public class Table {
         }
 
         /**
-         * metodo terminale build che controlla se Ë stata inserita la primary key nella tabella         * 
+         * metodo terminale build che controlla se √® stata inserita la primary key nella tabella
          * @return ritorna l'istanza della tabella finale creata con il builder.
          */
         public Table build() {
@@ -86,10 +87,10 @@ public class Table {
     }
     
     /**
-     * metodo check che controlla se la stringa data in input corrispondente ad un attributo
+     * metodo che controlla se la stringa data in input corrispondente ad un attributo
      * sia presente nella lista degli attributi della tabella
      * @param attribute stringa corrispondente al nome di un attributo ricercato
-     * @return se presente o meno l'attributo cercato nella lista degli attributi della tabella
+     * @return true se la tabella ha un attributo con nome che corrisponde alla stringa, false altrimenti
      */
     public boolean checkAttribute(String attribute) {
         return attributes.stream()
@@ -105,7 +106,7 @@ public class Table {
     /**
      * metodo getter
      * @param attributeName prende in input il nome di un attributo
-     * @return l'istanza dell'attributo cercato
+     * @return l'istanza dell'attributo inserito se esiste, null altrimenti
      */
     public Attribute getAttribute(String attributeName) {
         return attributes.stream()
@@ -121,9 +122,11 @@ public class Table {
     public Collection<Vincolo> getVincoli() { return vincoli; }
     
     /**
-     * metodo terminale build che controlla se c'Ë piu' di un attributo settato con auto incremental,
-     * o se ci sono attributi con nomi uguali, o se non Ë stata inserita nessuna chiave nella tabella
-     * @throws IllegalArgumentException
+     * metodo terminale build che controlla se c'√® piu' di un attributo settato con auto incremental,
+     * o se ci sono attributi con nomi uguali, o se non √® stata inserita nessuna chiave nella tabella
+     * @throws IllegalArgumentException se piu di un attributo ha settato l'auto increment a true
+     * oppure i nomi degli attributi non sono univoci
+     * oppure non sono state inserite chiavi nella tabella
      */
     public void build() throws IllegalArgumentException {
         if ((int)attributes.stream().filter(x -> x.getAutoIncremental()).count() > 1)
@@ -141,7 +144,7 @@ public class Table {
 
     /**
      * metodo getter 
-     * @return ritorna la query fatta a stringa che verr‡ lanciata in mySQL
+     * @return ritorna la query fatta a stringa che verr√† lanciata in mySQL
      */
     public String getQuery() {
     	//inizio a scrivere la query
@@ -171,9 +174,6 @@ public class Table {
         return out.append(");").toString();
     }
 
-    /**
-     * metodo toString che ritorna come Ë fatta la tabella
-     */
     @Override
     public String toString() {
         StringBuilder out = new StringBuilder(name + " (");

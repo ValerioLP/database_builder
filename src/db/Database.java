@@ -39,7 +39,7 @@ public class Database {
 
         /**
          * metodo che aggiunge una tabella nella lista delle tabelle di cui si sta componendo lo schema
-         * @param table prende una tabella in input e la aggiunge alla lista delle tabelle
+         * @param table prende una tabella in input e la aggiunge al db
          * @return l'istanza del builder
          */
         public DatabaseBuilder addTable(Table table) {
@@ -50,7 +50,7 @@ public class Database {
         /**
          * metodo terminale che chiude la creazione del database
          * @return ritorna l'istanza del database buildato
-         * @throws ForeignKeyException
+         * @throws ForeignKeyException se tutti gli attributi vincolati sono compatibili
          */
         public Database build() throws ForeignKeyException {
             Database db = new Database(this);              
@@ -87,7 +87,7 @@ public class Database {
      * costruttore della classe Database. Salva il nome del database, l'url del server mySQL
      * e l'account dell'utente mySQL inseriti nel DatabaseBuilder. 
      * Viene utilizzato nel metodo build della classe DatabaseBuilder
-     * @param prende un DatabaseBuilder in input
+     * @param builder prende un DatabaseBuilder in input
      */
     private Database(DatabaseBuilder builder)    {
         name = builder.name;
@@ -99,14 +99,14 @@ public class Database {
 
     /**
      * metodo getter
-     * @return restituisce la query
+     * @return restituisce la query creata fino a questo momento
      */
     public String getQuery() { return query; }
     
     /**
      * metoto getter
      * @param tableName prende un nome di una tabella in input
-     * @return restituisce una istanza di tabella a partire dalla sua stringa
+     * @return restituisce una istanza di tabella a partire dalla sua stringa se esiste, null altrimenti
      */
     public Table getTable(String tableName) {
     	return tables.stream()

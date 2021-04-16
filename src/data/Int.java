@@ -1,5 +1,8 @@
 package data;
 
+/**
+ * @author Luca Mattei, Valerio Mezzoprete
+ */
 public final class Int extends DataType
 {
     private int decimals;

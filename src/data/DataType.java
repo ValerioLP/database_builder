@@ -1,17 +1,32 @@
 package data;
 
+/**
+ * @author Luca Mattei, Valerio Mezzoprete
+ */
 public abstract class DataType
 {
+    /**
+     * Campi della classe:
+     */
     private String name;
 
     private boolean numeric;
 
+    /**
+     * costruttore della classe che crea un data type
+     * @param name nome del tipo
+     * @param numeric true se il tipo è numerico, false altrimenti
+     */
     public DataType(String name, boolean numeric)
     {
         this.name = name;
         this.numeric = numeric;
     }
 
+    /**
+     * metodo che controlla se un data type è numerico
+     * @return true se il data type è numerico, false altrimenti
+     */
     public boolean isNumeric() { return numeric; }
 
     @Override

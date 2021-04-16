@@ -1,5 +1,8 @@
 package data;
 
+/**
+ * @author Luca Mattei, Valerio Mezzoprete
+ */
 public final class VarChar extends DataType
 {
     private int characters;

@@ -5,7 +5,9 @@ public class Vincolo {
 	 * Campi della classe:
 	 */
     private String vincolato;
+
     private String referencedTable;
+
     private String foreignKey;
 
     /**
@@ -13,8 +15,8 @@ public class Vincolo {
      * @param vincolato nome dell'attributo vincolato della tabella su cui si sta inserendo il vincolo
      * @param referencedTable tabella referenziata da cui andare a prendere la foreign key da vincolare
      * @param foreignKey da vincolare all'attributo
-     * @throws IllegalArgumentException controlla se la foreign key è presente o meno nella tabella
-     * referenziata.
+     * @throws IllegalArgumentException controlla se la foreign key Ã¨ presente o meno nella tabella
+     * referenziata
      */
     public Vincolo(String vincolato, Table referencedTable, String foreignKey) throws IllegalArgumentException {
         if (!referencedTable.checkAttribute(foreignKey))
@@ -25,10 +27,20 @@ public class Vincolo {
     }
 
     /**
-     * metodi getter delle parti di cui è formato il vincolo.
-     * @return le varie parti del vincolo
+     * metodo getter
+     * @return la stringa corrispondete all'attributo vincolato
      */
     public String getVincolato() { return vincolato; }
+
+    /**
+     * metodo getter
+     * @return la stringa corrispondete alla tabella su cui c'Ã¨ il vincolo
+     */
     public String getReferencedTable() { return referencedTable; }
+
+    /**
+     * metodo getter
+     * @return la stringa corrispondente all'attributo della tabella su cui c'Ã¨ il vincolo
+     */
     public String getForeignKey() { return foreignKey; }
 }

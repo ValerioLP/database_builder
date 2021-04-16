@@ -42,7 +42,7 @@ public class Attribute {
         }
 
         /**
-         * metodo che aggiunge l'opzione key all'attributo
+         * metodo che aggiunge l'opzione key e not null all'attributo
          * @return l'istanza dell'attribute builder
          */
         public AttributeBuilder addKey() {
@@ -89,9 +89,9 @@ public class Attribute {
         }
 
         /**
-         * metodo terminale build che controlla se ad un tipo numerico è stata inserita l'opzione zero fill,
+         * metodo terminale build che controlla se ad un tipo numerico e stata inserita l'opzione zero fill,
          * se sono stati inseriti auto incremental e generated contemporaneamente 
-         * e se è stata inserita l'opzione auto incremental a un tipo numerico
+         * e se e stata inserita l'opzione auto incremental a un tipo numerico
          * @return l'istanza dell'attributo creato
          */
         public Attribute build() {
@@ -137,17 +137,31 @@ public class Attribute {
     }
 
     /**
-     * metodi getter delle varie opzioni dell'attributo
-     * @return ritorna le opzioni settate
+     * metodo che controlla se l'attributo Ã¨ chiave
+     * @return true se l'attributo Ã¨ chiave, false altrimenti
      */
     public boolean isKey() { return key; }
+
+    /**
+     * metodo che controlla se l'attributo Ã¨ unique
+     * @return true se l'attributo Ã¨ unique, false altrimenti
+     */
     public boolean isUnique() { return unique; }
+
+    /**
+     * metodo che controlla se l'auto incremental Ã¨ stato settato
+     * @return true se l'attributo Ã¨ chiave, false altrimenti
+     */
     public boolean getAutoIncremental() { return autoIncremental; }
+
+    /**
+     * metodo che ritorna il nome dell'attributo
+     * @return nome dell'attributo
+     */
     public String getName() { return name; }
 
     /**
-     * metodo che ritorna la query sottoforma di stringa dell'attributo generato grazie al
-     * builder della classe attribute.
+     * metodo che ritorna la query dell'attributo sottoforma di stringa
      * @return la query sottoforma di stringa dell'attributo creato.
      */
     public String getQuery() {
@@ -167,23 +181,19 @@ public class Attribute {
     }
 
     /**
-     * metodo che controlla se l'attributo dato in input è compatibile con l'attributo
+     * metodo che controlla se l'attributo dato in input e compatibile con l'attributo
      * su cui viene applicato il metodo.
      * Esso controlla se sono dello stesso tipo e se entrambi hanno le stesse opzioni di
      * not null e zero fill
-     * @param attributo da controllare
-     * @return se l'attributo in input è compatibile o meno
+     * @param a attributo da controllare
+     * @return true se a Ã¨ compatibile con this, false altrimenti
      */
     public boolean compatibleTo(Attribute a) {
         return type.equals(a.type) &&
                 ((notNull && a.notNull) || (!notNull && !a.notNull)) &&
                 ((fill && a.fill) || (!fill && !a.fill));
     }
-    
-    /**
-     * metodo equals che controlla se l'oggetto dato in input è uguale all'attributo
-     * su cui viene applicato il metodo
-     */
+
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof Attribute))
