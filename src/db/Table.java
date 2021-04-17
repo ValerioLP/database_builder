@@ -18,7 +18,6 @@ public class Table {
         private String name;
 
         private List<Attribute> attributes = new ArrayList<>();
-
         private List<Vincolo> vincoli = new ArrayList<>();
 
         /**
@@ -48,7 +47,7 @@ public class Table {
          * @throws IllegalArgumentException controlla se l'attributo vincolato è presente o no nella
          * tabella
          */        
-        public TableBuilder addVincolo(Vincolo vincolo)throws IllegalArgumentException {        	
+        public TableBuilder addVincolo(Vincolo vincolo) throws IllegalArgumentException {        	
             if (!attributes.stream().anyMatch(x -> x.getName().equals(vincolo.getVincolato())))
             throw new IllegalArgumentException("l'attributo vincolato non e' presente nella tabella");
             this.vincoli.add(vincolo);

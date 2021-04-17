@@ -5,10 +5,14 @@ import db.Table;
 
 import java.util.TreeMap;
 
+/**
+ * Classe utilizzata per creare delle query di inserimento.
+ * Sfruttata principalmente per essere data in pasto al metodo insert della classe Database.
+ * @author Luca Mattei, Valerio Mezzoprete
+ */
 public final class Insert extends Query {
 
-    public static class QueryBuilder
-    {
+    public static class QueryBuilder {
         /**
          * Campi della classe builder:
          */

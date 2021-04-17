@@ -75,7 +75,6 @@ public class Database {
     static final String DRIVERS = "com.mysql.cj.jdbc.Driver";
     static final String CREATE = "create database if not exists ";
     static final String USE = "use ";
-    static final String INSERT = "insert into ";
 
     private String name;
     private String url;    
@@ -118,12 +117,6 @@ public class Database {
         //esegue le query in sql creando il database
         create();
     }
-
-    /**
-     * metodo getter
-     * @return restituisce la query creata fino a questo momento
-     */
-    public String getQuery() { return query; }
     
     /**
      * metoto getter
@@ -136,20 +129,12 @@ public class Database {
     			.reduce((x, y) -> x)
     			.orElse(null);
     }
-
-    private void executeQuery(String query) throws SQLException
-    {
-        //prova a creare una connessione con mySQL per permettere l'utilizzo delle query
-        Statement stmt = null;
-        try {
-            stmt = conn.createStatement();
-            System.out.println(query);
-            stmt.execute(query);
-        }
-        catch(SQLException e) {
-            throw new SQLException("error occured during query execution");
-        }
-    }
+    
+    /**
+     * metodo getter
+     * @return restituisce la query creata fino a questo momento
+     */
+    public String getQuery() { return query; }
 
     /**
      * metodo che esegue effettivamente la connessione al database ed esegue tutte le query 
@@ -171,14 +156,37 @@ public class Database {
             System.out.println("query #" + k + " eseguita correttamente");
         }
     }
+    
+    /**
+     * metodo di utilità generico privato che esegue la query in input
+     * @param query la query sottoforma di stringa
+     * @throws SQLException
+     */
+    private void executeQuery(String query) throws SQLException {
+        //prova a creare una connessione con mySQL per permettere l'utilizzo delle query
+        Statement stmt = null;
+        try {
+            stmt = conn.createStatement();
+            System.out.println(query);
+            stmt.execute(query);
+        }
+        catch(SQLException e) {
+            throw new SQLException("error occured during query execution");
+        }
+    }
+    
 
-    public void insertFile(String tablename, List<String> attributes, String fileName)
-    {
+    /**
+     * metodo specifico per l'esecuzione di query di tipo insert
+     * @param query l'istanza della query ObjOr
+     * @throws SQLException 
+     */
+    public void insert(Query query) throws SQLException { executeQuery(query.toString()); }
+
+    public void insertFile(String tablename, List<String> attributes, String fileName)    {
         //for ringa file:
             //insert(tablename, attributes, riga)
     }
-
-    public void insert(Query query) throws SQLException { executeQuery(query.toString()); }
 
     @Override
     public String toString() { return name + " " + url; }
