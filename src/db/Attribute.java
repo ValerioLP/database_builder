@@ -2,10 +2,11 @@ package db;
 
 import data.DataType;
 
+/**
+ * @author Luca Mattei, Valerio Mezzoprete
+ */
 public class Attribute {
-	/**
-	 * @author Luca Mattei, Valerio Mezzoprete
-	 */
+
     public static class AttributeBuilder {
     	/**
     	 * Campi della classe builder:
@@ -141,6 +142,12 @@ public class Attribute {
      * @return true se l'attributo è chiave, false altrimenti
      */
     public boolean isKey() { return key; }
+
+    /**
+     * metodo che controlla se l'attributo è not null
+     * @return true se l'attributo è not null, false altrimenti
+     */
+    public boolean isNotNull() { return notNull; }
 
     /**
      * metodo che controlla se l'attributo è unique

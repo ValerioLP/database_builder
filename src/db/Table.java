@@ -102,7 +102,13 @@ public class Table {
      * @return restituisce il nome della tabella
      */
     public String getName() { return name; }
-    
+
+    /**
+     * metodo getter
+     * @return lista degli attributi
+     */
+    public List<Attribute> getAttributes() { return attributes; }
+
     /**
      * metodo getter
      * @param attributeName prende in input il nome di un attributo

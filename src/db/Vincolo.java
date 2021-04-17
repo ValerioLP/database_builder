@@ -5,9 +5,7 @@ public class Vincolo {
 	 * Campi della classe:
 	 */
     private String vincolato;
-
     private String referencedTable;
-
     private String foreignKey;
 
     /**
