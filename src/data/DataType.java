@@ -29,6 +29,12 @@ public abstract class DataType
      */
     public boolean isNumeric() { return numeric; }
 
+    /**
+     * metodo che crea un'istanza random del randomize
+     * @return una stringa randomizzata deldata type
+     */
+    public abstract String randomize();
+
     @Override
     public boolean equals(Object o)
     {

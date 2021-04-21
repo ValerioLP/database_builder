@@ -174,7 +174,6 @@ public class Database {
             throw new SQLException("error occured during query execution");
         }
     }
-    
 
     /**
      * metodo specifico per l'esecuzione di query di tipo insert
