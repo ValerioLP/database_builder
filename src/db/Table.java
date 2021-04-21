@@ -179,6 +179,20 @@ public class Table {
         return out.append(");").toString();
     }
 
+    /*
+    TO DO:
+        -hash code
+        -equals su vincoli
+     */
+
+    @Override
+    public boolean equals(Object o) {
+        if (!o instanceof Table)
+            return false;
+        Table t = (Table)o;
+        return name.equals(t.name) && attributes.equals(t.attributes) && vincoli.equals(t.vincoli);
+    }
+
     @Override
     public String toString() {
         StringBuilder out = new StringBuilder(name + " (");

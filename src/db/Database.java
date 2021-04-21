@@ -7,6 +7,7 @@ import utility.Query;
 
 import java.sql.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /** 
  * @author Luca Mattei, Valerio Mezzoprete
@@ -173,6 +174,30 @@ public class Database {
         catch(SQLException e) {
             throw new SQLException("error occured during query execution");
         }
+    }
+
+    /**
+     * popola il db con entry casuali
+     */
+    public void randomPopulate() {
+        //prendo la lista di table che ha almeno una foreign key
+        List<Table> linkedTables = tables.stream()
+                .filter(t -> !t.getVincoli().isEmpty())
+                .collect(Collectors.toList());
+        //prendo la lista di table che non ha foreign key
+        List<Table> freeTables = tables.stream()
+                .filter(t -> !linkedTables.stream().map(x -> x.getName()).anyMatch(x -> x.equals(t.getName())))
+                .collect(Collectors.toList());
+        //costruisco una mappa da table a lista di attributi che sono foreign key in altre table
+        Map<Table, List<Attribute>> tableMap = new HashMap<>();
+
+        linkedTables.stream()
+                .forEach(t -> t.getVincoli().forEach(v -> tableMap.containsKey(v.getReferencedTable()) == true ?
+                        tableMap.get(getTable(v.getReferencedTable())).add(getTable(v.getReferencedTable()).getAttribute(v.getVincolato())) :
+                        tableMap.put(getTable(v.getReferencedTable()), (((new ArrayList<Attribute>()).add(getTable(v.getReferencedTable()).getAttribute(v.getVincolato())))):
+
+
+
     }
 
     /**
