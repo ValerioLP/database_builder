@@ -183,11 +183,6 @@ public class Database {
      */
     public void insert(Query query) throws SQLException { executeQuery(query.toString()); }
 
-    public void insertFile(String tablename, List<String> attributes, String fileName)    {
-        //for ringa file:
-            //insert(tablename, attributes, riga)
-    }
-
     @Override
     public String toString() { return name + " " + url; }
 }
