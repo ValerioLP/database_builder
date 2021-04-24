@@ -41,4 +41,13 @@ public class Vincolo {
      * @return la stringa corrispondente all'attributo della tabella su cui c'è il vincolo
      */
     public String getForeignKey() { return foreignKey; }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (!(o instanceof Vincolo))
+            return false;
+        Vincolo v = (Vincolo)o;
+        return vincolato.equals(v.vincolato) && referencedTable.equals(v.referencedTable) && foreignKey.equals(v.foreignKey);
+    }
 }

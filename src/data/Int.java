@@ -20,7 +20,7 @@ public final class Int extends DataType
     public String randomize() {
         StringBuilder out = new StringBuilder();
         Random r = new Random();
-        for (int i = 0; i< decimals ; i++)
+        for (int i = 0; i < decimals - 1 ; i++)
             out.append(r.nextInt(10));
         return out.toString();
     }

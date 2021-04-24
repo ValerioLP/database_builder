@@ -3,6 +3,7 @@ package db;
 import data.Account;
 import exceptions.DriverNotFoundException;
 import exceptions.ForeignKeyException;
+import utility.Insert;
 import utility.Query;
 
 import java.sql.*;
@@ -186,18 +187,111 @@ public class Database {
                 .collect(Collectors.toList());
         //prendo la lista di table che non ha foreign key
         List<Table> freeTables = tables.stream()
-                .filter(t -> !linkedTables.stream().map(x -> x.getName()).anyMatch(x -> x.equals(t.getName())))
+                .filter(t -> linkedTables.stream().map(x -> x.getName()).noneMatch(x -> x.equals(t.getName())))
                 .collect(Collectors.toList());
-        //costruisco una mappa da table a lista di attributi che sono foreign key in altre table
-        Map<Table, List<Attribute>> tableMap = new HashMap<>();
+        //costruisco una mappa da table.attributo a lista di attributi che sono foreign key in altre table
+        Map<String, List<Attribute>> tableMap = new HashMap<>();
 
         linkedTables.stream()
-                .forEach(t -> t.getVincoli().forEach(v -> tableMap.containsKey(v.getReferencedTable()) == true ?
-                        tableMap.get(getTable(v.getReferencedTable())).add(getTable(v.getReferencedTable()).getAttribute(v.getVincolato())) :
-                        tableMap.put(getTable(v.getReferencedTable()), (((new ArrayList<Attribute>()).add(getTable(v.getReferencedTable()).getAttribute(v.getVincolato())))):
+                .forEach(t -> t.getVincoli().forEach(v -> {
+                    String key = getTable(v.getReferencedTable()).getName() + "." + v.getForeignKey();
+                    if (tableMap.containsKey(key))
+                        tableMap.get(key).add(t.getAttribute(v.getVincolato()));
+                    else
+                    {
+                        List<Attribute> l = new ArrayList<>();
+                        l.add(t.getAttribute(v.getVincolato()));
+                        tableMap.put(key, l);
+                    }
+                }));
+
+        //print per test
+        linkedTables.stream().forEach(x -> System.out.println(x));
+        System.out.println("-------------------------");
+        freeTables.stream().forEach(x -> System.out.println(x));
+        System.out.println("-------------------------");
+        tableMap.forEach((k, v) -> System.out.println(k + " : " + v.toString()));
+        System.out.println();
+
+        //costruisco una mappa da table.attribute a valori generati per quell'attributo
+        Map<String, List<String>> valoriGenerati = new HashMap<>();
+
+        //generiamo i valori e quelli vincolati li salviamo all'interno di una mappa
+        freeTables.stream()
+                .forEach(t -> {
+                    for (int i = 0; i < 1000; i++)
+                    {
+                        Insert.QueryBuilder q = new Insert.QueryBuilder(this, t.getName());
+                        t.getAttributes().stream().forEach(a -> {
+                            //creo un valore random suldominio del tipo
+                            String randomValue = a.getType().randomize();
+                            //genero la chiave nel formato table.attribute
+                            String key = t.getName() + "." + a.getName();
+                            if (tableMap.containsKey(key))
+                            {
+                                //se la chiave è presente nella mappa allora aggiungo il valore all'insieme
+                                valoriGenerati.computeIfPresent(key, (k, v) -> { v.add(randomValue); return v; } );
+                                //se la chiave non è presente nella mappa allora creo un insieme e ci aggiungo il valore
+                                valoriGenerati.computeIfAbsent(key, k -> {
+                                    List<String> l = new LinkedList<>();
+                                    l.add(randomValue);
+                                    return l;
+                                });
+                            }
+                            q.addValue(a.getName(), randomValue);
+                        });
+                        try { insert(q.build()); }
+                        catch (SQLException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+
+        valoriGenerati.forEach((k, v) -> System.out.println(k + " : " + v.toString()));
+        valoriGenerati.forEach((k, v) -> System.out.println(v.size()));
 
 
+        //fixare problma di ordinamento delle tabelle linkate (sort topologico)
 
+
+        Random random = new Random();
+        linkedTables.stream()
+                .forEach(t -> {
+                    for (int i = 0; i < 1000; i++)
+                    {
+                        Insert.QueryBuilder q = new Insert.QueryBuilder(this, t.getName());
+                        t.getAttributes().stream().forEach(a -> {
+                            if (!a.getAutoIncremental()) {
+                                String randomValue;
+
+                                boolean insideMap = false;
+
+                                for (String k : tableMap.keySet())
+                                    insideMap = tableMap.get(k).contains(a);
+
+                                if (insideMap) {
+                                    //prendiamo la chiave corrispondente dalla mappa talbe.attribute -> [attributi vincolati]
+                                    String key = "";
+                                    for (String k : tableMap.keySet())
+                                        if (tableMap.get(k).contains(a))
+                                            key = k;
+
+                                    List<String> listaValori = valoriGenerati.get(key);
+                                    randomValue = listaValori.get(random.nextInt(listaValori.size()));
+                                }
+                                else
+                                    randomValue = a.getType().randomize();
+                                q.addValue(a.getName(), randomValue);
+                            }
+                        });
+                        Query query = q.build();
+                        try { insert(query); }
+                        catch (SQLException e) {
+                            System.out.println("errore nella query: " + query);
+                            break;
+                        }
+                    }
+                });
     }
 
     /**

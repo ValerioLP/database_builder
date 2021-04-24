@@ -64,6 +64,7 @@ public final class Insert extends Query {
             if (!t.getAttributes()
                     .stream()
                     .filter(x -> x.isNotNull())
+                    .filter(x -> !x.getAutoIncremental())
                     .allMatch(x -> attributes.keySet().contains(x.getName())))
                 throw new IllegalArgumentException("uno o piu attributi obbligatori non sono stati inseriti nella lista");
 

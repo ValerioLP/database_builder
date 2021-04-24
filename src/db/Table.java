@@ -179,15 +179,12 @@ public class Table {
         return out.append(");").toString();
     }
 
-    /*
-    TO DO:
-        -hash code
-        -equals su vincoli
-     */
+    @Override
+    public int hashCode() { return name.hashCode() ^ attributes.hashCode() ^ vincoli.hashCode(); }
 
     @Override
     public boolean equals(Object o) {
-        if (!o instanceof Table)
+        if (!(o instanceof Table))
             return false;
         Table t = (Table)o;
         return name.equals(t.name) && attributes.equals(t.attributes) && vincoli.equals(t.vincoli);

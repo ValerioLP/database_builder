@@ -167,6 +167,8 @@ public class Attribute {
      */
     public String getName() { return name; }
 
+    public DataType getType() { return type; }
+
     /**
      * metodo che ritorna la query dell'attributo sottoforma di stringa
      * @return la query sottoforma di stringa dell'attributo creato.
@@ -205,9 +207,8 @@ public class Attribute {
     public boolean equals(Object o) {
         if (!(o instanceof Attribute))
             return false;        
-        Attribute a = (Attribute)o;        
-        return compatibleTo(a) &&
-        		 name.equals(a.name) &&        		 
+        Attribute a = (Attribute)o;
+        return compatibleTo(a) && name.equals(a.name) &&
                 ((autoIncremental && a.autoIncremental) || (!autoIncremental && !a.autoIncremental)) &&
                 ((key && a.key) || (!key && !a.key)) &&
                 ((unique && a.unique) || (!unique && !a.unique)) &&
