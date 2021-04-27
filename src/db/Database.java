@@ -3,6 +3,7 @@ package db;
 import data.Account;
 import exceptions.DriverNotFoundException;
 import exceptions.ForeignKeyException;
+import utility.Coppia;
 import utility.Insert;
 import utility.Query;
 
@@ -181,117 +182,130 @@ public class Database {
      * popola il db con entry casuali
      */
     public void randomPopulate() {
-        //prendo la lista di table che ha almeno una foreign key
-        List<Table> linkedTables = tables.stream()
-                .filter(t -> !t.getVincoli().isEmpty())
-                .collect(Collectors.toList());
-        //prendo la lista di table che non ha foreign key
-        List<Table> freeTables = tables.stream()
-                .filter(t -> linkedTables.stream().map(x -> x.getName()).noneMatch(x -> x.equals(t.getName())))
-                .collect(Collectors.toList());
-        //costruisco una mappa da table.attributo a lista di attributi che sono foreign key in altre table
-        Map<String, List<Attribute>> tableMap = new HashMap<>();
+        //dizionario che mappa ogni table a un numero
+        Map<Table, Integer> tableToInt = new HashMap<>();
 
-        linkedTables.stream()
+        //popoliamo la mappa
+        for (int i = 0; i < tables.size(); i++)
+            tableToInt.put(tables.get(i), i);
+
+        Map<Integer, List<Coppia>> graph = new HashMap();
+
+        //popoliamo il grafo
+        tables.stream().forEach(t -> graph.put(tableToInt.get(t), new ArrayList<>()));
+
+        tables.stream()
                 .forEach(t -> t.getVincoli().forEach(v -> {
-                    String key = getTable(v.getReferencedTable()).getName() + "." + v.getForeignKey();
-                    if (tableMap.containsKey(key))
-                        tableMap.get(key).add(t.getAttribute(v.getVincolato()));
-                    else
-                    {
-                        List<Attribute> l = new ArrayList<>();
-                        l.add(t.getAttribute(v.getVincolato()));
-                        tableMap.put(key, l);
-                    }
+                    graph.get(tableToInt.get(getTable(v.getReferencedTable()))).add(new Coppia(tableToInt.get(t), v.getForeignKey()));
                 }));
 
-        //print per test
-        linkedTables.stream().forEach(x -> System.out.println(x));
-        System.out.println("-------------------------");
-        freeTables.stream().forEach(x -> System.out.println(x));
-        System.out.println("-------------------------");
-        tableMap.forEach((k, v) -> System.out.println(k + " : " + v.toString()));
+        tableToInt.forEach((k, v) -> System.out.println(k.getName() + " : " + v));
         System.out.println();
+        graph.forEach((k, v) -> System.out.println(k + " : " + v));
+        System.out.println();
+
+        //facendo il sort topologico sul grafo otteniamo la lista ordinata delle table da popolare
+        List<Integer> tableSortInt = sortTopologico(graph);
+
+        List<Table> tableSort = tableSortInt.stream().map(i -> {
+            for (Table t : tableToInt.keySet())
+                if ((int)tableToInt.get(t) == i)
+                    return t;
+            return null;
+        })
+                .collect(Collectors.toList());
+
+        System.out.println(tableSort);
 
         //costruisco una mappa da table.attribute a valori generati per quell'attributo
         Map<String, List<String>> valoriGenerati = new HashMap<>();
 
-        //generiamo i valori e quelli vincolati li salviamo all'interno di una mappa
-        freeTables.stream()
-                .forEach(t -> {
-                    for (int i = 0; i < 1000; i++)
-                    {
-                        Insert.QueryBuilder q = new Insert.QueryBuilder(this, t.getName());
-                        t.getAttributes().stream().forEach(a -> {
-                            //creo un valore random suldominio del tipo
-                            String randomValue = a.getType().randomize();
-                            //genero la chiave nel formato table.attribute
-                            String key = t.getName() + "." + a.getName();
-                            if (tableMap.containsKey(key))
+        //iteriamo su ogni table in tableSort
+        for (int i = 0; i < tableSort.size(); i++)
+        {
+            //generiamo un insieme di attributi che, nel momento in cui li creiamo vanno salvati
+            Set<String> attributiDaSalvare = new HashSet<>();
+
+            //popoliamo l'insieme
+            for (Integer k : graph.keySet())
+            {
+                for (Coppia c : graph.get(k))
+                {
+                    attributiDaSalvare.add(c.getSnd().toString());
+                }
+            }
+
+            //popoliamo ogni table con 1000 occorrenze
+            for (int j = 0; j < 1000; j++)
+            {
+                Table t = tableSort.get(i);
+                Insert.QueryBuilder q = new Insert.QueryBuilder(this, t.getName());
+                t.getAttributes()
+                        .stream()
+                        .forEach(a -> {
+                            if (t.getVincoli().stream().noneMatch(v -> v.getVincolato().equals(a.getName()))) //non devo usare un attributo gia generato
                             {
-                                //se la chiave è presente nella mappa allora aggiungo il valore all'insieme
-                                valoriGenerati.computeIfPresent(key, (k, v) -> { v.add(randomValue); return v; } );
-                                //se la chiave non è presente nella mappa allora creo un insieme e ci aggiungo il valore
-                                valoriGenerati.computeIfAbsent(key, k -> {
-                                    List<String> l = new LinkedList<>();
-                                    l.add(randomValue);
-                                    return l;
-                                });
-                            }
-                            q.addValue(a.getName(), randomValue);
-                        });
-                        try { insert(q.build()); }
-                        catch (SQLException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                });
+                                //creo un valore random suldominio del tipo
+                                String randomValue = a.getType().randomize();
 
-        valoriGenerati.forEach((k, v) -> System.out.println(k + " : " + v.toString()));
-        valoriGenerati.forEach((k, v) -> System.out.println(v.size()));
+                                if (attributiDaSalvare.contains(a.getName()))
+                                {
+                                    //genero la chiave nel formato table.attribute
+                                    String key = t.getName() + "." + a.getName();
 
+                                    //se la chiave è presente nella mappa allora aggiungo il valore all'insieme
+                                    valoriGenerati.computeIfPresent(key, (k, v) -> { v.add(randomValue); return v; } );
 
-        //fixare problma di ordinamento delle tabelle linkate (sort topologico)
-
-
-        Random random = new Random();
-        linkedTables.stream()
-                .forEach(t -> {
-                    for (int i = 0; i < 1000; i++)
-                    {
-                        Insert.QueryBuilder q = new Insert.QueryBuilder(this, t.getName());
-                        t.getAttributes().stream().forEach(a -> {
-                            if (!a.getAutoIncremental()) {
-                                String randomValue;
-
-                                boolean insideMap = false;
-
-                                for (String k : tableMap.keySet())
-                                    insideMap = tableMap.get(k).contains(a);
-
-                                if (insideMap) {
-                                    //prendiamo la chiave corrispondente dalla mappa talbe.attribute -> [attributi vincolati]
-                                    String key = "";
-                                    for (String k : tableMap.keySet())
-                                        if (tableMap.get(k).contains(a))
-                                            key = k;
-
-                                    List<String> listaValori = valoriGenerati.get(key);
-                                    randomValue = listaValori.get(random.nextInt(listaValori.size()));
+                                    //se la chiave non è presente nella mappa allora creo un insieme e ci aggiungo il valore
+                                    valoriGenerati.computeIfAbsent(key, k -> {
+                                        List<String> l = new LinkedList<>();
+                                        l.add(randomValue);
+                                        return l;
+                                    });
                                 }
-                                else
-                                    randomValue = a.getType().randomize();
+
                                 q.addValue(a.getName(), randomValue);
                             }
+                            else //caso in cui devo prendere il valore dai valori generati
+                            {
+
+                            }
+
                         });
-                        Query query = q.build();
-                        try { insert(query); }
-                        catch (SQLException e) {
-                            System.out.println("errore nella query: " + query);
-                            break;
-                        }
-                    }
-                });
+
+                try { insert(q.build()); }
+                catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private List<Integer> sortTopologico(Map<Integer, List<Coppia>> graph)
+    {
+        int[] checked = new int[graph.size()];
+        List<Integer> sol = new ArrayList<>(graph.size());
+        for (int i = 0; i < graph.size(); i++)
+        {
+            if (checked[i] == 0)
+            {
+                DFS(i, graph, checked, sol);
+            }
+        }
+        Collections.reverse(sol);
+        return sol;
+    }
+
+    private void DFS(int x, Map<Integer, List<Coppia>> graph, int[] checked, List<Integer> sol)
+    {
+        checked[x] = 1;
+        for (Coppia c : graph.get(x))
+        {
+            int y = (int) c.getFst();
+            if (checked[y] == 0)
+                DFS(y, graph, checked, sol);
+        }
+        sol.add(x);
     }
 
     /**
