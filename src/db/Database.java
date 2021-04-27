@@ -181,10 +181,11 @@ public class Database {
     /**
      * popola il db con entry casuali
      */
-    public void randomPopulate() {
+    public void randomPopulate() 
+    {
         //dizionario che mappa ogni table a un numero
         Map<Table, Integer> tableToInt = new HashMap<>();
-
+        
         //popoliamo la mappa
         for (int i = 0; i < tables.size(); i++)
             tableToInt.put(tables.get(i), i);
@@ -193,7 +194,6 @@ public class Database {
 
         //popoliamo il grafo
         tables.stream().forEach(t -> graph.put(tableToInt.get(t), new ArrayList<>()));
-
         tables.stream()
                 .forEach(t -> t.getVincoli().forEach(v -> {
                     graph.get(tableToInt.get(getTable(v.getReferencedTable()))).add(new Coppia(tableToInt.get(t), v.getForeignKey()));
@@ -206,14 +206,13 @@ public class Database {
 
         //facendo il sort topologico sul grafo otteniamo la lista ordinata delle table da popolare
         List<Integer> tableSortInt = sortTopologico(graph);
-
-        List<Table> tableSort = tableSortInt.stream().map(i -> {
+        List<Table> tableSort = tableSortInt.stream().map(i -> 
+        {
             for (Table t : tableToInt.keySet())
                 if ((int)tableToInt.get(t) == i)
                     return t;
             return null;
-        })
-                .collect(Collectors.toList());
+        }).collect(Collectors.toList());
 
         System.out.println(tableSort);
 
@@ -242,22 +241,25 @@ public class Database {
                 Insert.QueryBuilder q = new Insert.QueryBuilder(this, t.getName());
                 t.getAttributes()
                         .stream()
-                        .forEach(a -> {
+                        .forEach(a -> 
+                        {
                             if (t.getVincoli().stream().noneMatch(v -> v.getVincolato().equals(a.getName()))) //non devo usare un attributo gia generato
                             {
-                                //creo un valore random suldominio del tipo
-                                String randomValue = a.getType().randomize();
-
+                                //creo un valore random sul dominio del tipo
+                                String randomValue = a.getType().randomize();           
+                                
+                                //se l'attributo è contenuto nell'insieme degli attributi da salvare
                                 if (attributiDaSalvare.contains(a.getName()))
                                 {
                                     //genero la chiave nel formato table.attribute
-                                    String key = t.getName() + "." + a.getName();
-
-                                    //se la chiave è presente nella mappa allora aggiungo il valore all'insieme
-                                    valoriGenerati.computeIfPresent(key, (k, v) -> { v.add(randomValue); return v; } );
-
+                                    String key = t.getName() + "." + a.getName();       
+                                    
+                                    //se la chiave è presente nella mappa allora aggiungo il valore all'insieme                                    
+                                    valoriGenerati.computeIfPresent(key, (k, v) -> { v.add(randomValue); return v; } );    
+                                    
                                     //se la chiave non è presente nella mappa allora creo un insieme e ci aggiungo il valore
-                                    valoriGenerati.computeIfAbsent(key, k -> {
+                                    valoriGenerati.computeIfAbsent(key, k -> 
+                                    {
                                         List<String> l = new LinkedList<>();
                                         l.add(randomValue);
                                         return l;
@@ -268,19 +270,43 @@ public class Database {
                             }
                             else //caso in cui devo prendere il valore dai valori generati
                             {
+                            	if (!a.getAutoIncremental()) 
+                            	{
+                                    String randomValue;
 
+                                    boolean insideMap = false;
+
+                                    for (String k : attributiDaSalvare)
+                                        insideMap = attributiDaSalvare.contains(a);
+
+                                    if (insideMap) 
+                                    {
+                                    	String key = "";
+                                        for (String k : attributiDaSalvare)
+                                            if (attributiDaSalvare.contains(a))
+                                                key = k;
+
+                                        List<String> listaValori = valoriGenerati.get(key);
+                                        randomValue = listaValori.get(new Random().nextInt(listaValori.size()));
+                                        q.addValue(a.getName(), randomValue);
+                                    }
+                            	}
                             }
-
-                        });
-
+                        }); //chiusura del forEach
                 try { insert(q.build()); }
-                catch (SQLException e) {
+                catch (SQLException e) 
+                {
                     e.printStackTrace();
                 }
             }
         }
     }
 
+    /**
+     * metodo privato che fa un ordinamento topologico su un grafo
+     * @param graph
+     * @return la lista dei nodi del grafo ordinati in modo topologico
+     */
     private List<Integer> sortTopologico(Map<Integer, List<Coppia>> graph)
     {
         int[] checked = new int[graph.size()];
@@ -296,6 +322,13 @@ public class Database {
         return sol;
     }
 
+    /**
+     * metodo ricorsivo chiamato dal metodo di ordinamento topologico
+     * @param x -> il nodo che si sta iterando
+     * @param graph
+     * @param checked -> lista dei nodi gia controllati
+     * @param sol -> la lista finale dei nodi ordinati topologicamente
+     */
     private void DFS(int x, Map<Integer, List<Coppia>> graph, int[] checked, List<Integer> sol)
     {
         checked[x] = 1;
