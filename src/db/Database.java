@@ -83,6 +83,8 @@ public class Database {
     private String url;    
     private String query;
 
+    private int autoIncremental = 1;
+
     Connection conn = null;
 
     private List<Table> tables = new ArrayList<>();
@@ -190,7 +192,7 @@ public class Database {
         for (int i = 0; i < tables.size(); i++)
             tableToInt.put(tables.get(i), i);
 
-        Map<Integer, List<Coppia>> graph = new HashMap();
+        Map<Integer, List<Coppia<Integer, String>>> graph = new HashMap();
 
         //popoliamo il grafo
         tables.stream().forEach(t -> graph.put(tableToInt.get(t), new ArrayList<>()));
@@ -198,11 +200,6 @@ public class Database {
                 .forEach(t -> t.getVincoli().forEach(v -> {
                     graph.get(tableToInt.get(getTable(v.getReferencedTable()))).add(new Coppia(tableToInt.get(t), v.getForeignKey()));
                 }));
-
-        tableToInt.forEach((k, v) -> System.out.println(k.getName() + " : " + v));
-        System.out.println();
-        graph.forEach((k, v) -> System.out.println(k + " : " + v));
-        System.out.println();
 
         //facendo il sort topologico sul grafo otteniamo la lista ordinata delle table da popolare
         List<Integer> tableSortInt = sortTopologico(graph);
@@ -213,8 +210,6 @@ public class Database {
                     return t;
             return null;
         }).collect(Collectors.toList());
-
-        System.out.println(tableSort);
 
         //costruisco una mappa da table.attribute a valori generati per quell'attributo
         Map<String, List<String>> valoriGenerati = new HashMap<>();
@@ -228,7 +223,7 @@ public class Database {
             //popoliamo l'insieme
             for (Integer k : graph.keySet())
             {
-                for (Coppia c : graph.get(k))
+                for (Coppia<Integer, String> c : graph.get(k))
                 {
                     attributiDaSalvare.add(c.getSnd().toString());
                 }
@@ -239,58 +234,75 @@ public class Database {
             {
                 Table t = tableSort.get(i);
                 Insert.QueryBuilder q = new Insert.QueryBuilder(this, t.getName());
+
                 t.getAttributes()
                         .stream()
                         .forEach(a -> 
                         {
-                            if (t.getVincoli().stream().noneMatch(v -> v.getVincolato().equals(a.getName()))) //non devo usare un attributo gia generato
+                            if (!a.getAutoIncremental()) //se l'attributo non è autoincremental
                             {
-                                //creo un valore random sul dominio del tipo
-                                String randomValue = a.getType().randomize();           
-                                
-                                //se l'attributo è contenuto nell'insieme degli attributi da salvare
-                                if (attributiDaSalvare.contains(a.getName()))
+                                if (t.getVincoli().stream().noneMatch(v -> v.getVincolato().equals(a.getName()))) //caso in cui devo generare un calore casuale
                                 {
-                                    //genero la chiave nel formato table.attribute
-                                    String key = t.getName() + "." + a.getName();       
-                                    
-                                    //se la chiave è presente nella mappa allora aggiungo il valore all'insieme                                    
-                                    valoriGenerati.computeIfPresent(key, (k, v) -> { v.add(randomValue); return v; } );    
-                                    
+                                    //creo un valore random sul dominio del tipo
+                                    String randomValue = a.getType().randomize();
+
+                                    //se l'attributo è contenuto nell'insieme degli attributi è da salvare
+                                    if (attributiDaSalvare.contains(a.getName())) {
+                                        //genero la chiave nel formato table.attribute
+                                        String key = t.getName() + "." + a.getName();
+
+                                        //se la chiave è presente nella mappa allora aggiungo il valore all'insieme
+                                        valoriGenerati.computeIfPresent(key, (k, v) -> {
+                                            v.add(randomValue);
+                                            return v;
+                                        });
+
+                                        //se la chiave non è presente nella mappa allora creo un insieme e ci aggiungo il valore
+                                        valoriGenerati.computeIfAbsent(key, k ->
+                                        {
+                                            List<String> l = new LinkedList<>();
+                                            l.add(randomValue);
+                                            return l;
+                                        });
+                                    }
+                                    q.addValue(a.getName(), randomValue);
+                                }
+                                else //caso in cui devo prendere il valore dai valori generati
+                                {
+                                    Vincolo v = t.getVincoli().stream().
+                                            filter(x -> x.getVincolato().equals(a.getName()))
+                                            .reduce((x, y) -> x)
+                                            .orElse(null);
+
+                                    String key = v.getReferencedTable() + "." + v.getForeignKey();
+
+                                    List<String> listaValori = valoriGenerati.get(key);
+                                    String randomValue = listaValori.get(new Random().nextInt(listaValori.size()));
+
+                                    q.addValue(a.getName(), randomValue);
+                                }
+                            }
+                            else //l'attributo è autoincremental
+                            {
+                                if (attributiDaSalvare.contains(a.getName())) //l'attributo è chiave
+                                {
+                                    String key = t.getName() + "." + a.getName();
+
+                                    //se la chiave è presente nella mappa allora aggiungo il valore all'insieme
+                                    valoriGenerati.computeIfPresent(key, (k, v) -> {
+                                        v.add(autoIncremental + "");
+                                        return v;
+                                    });
+
                                     //se la chiave non è presente nella mappa allora creo un insieme e ci aggiungo il valore
-                                    valoriGenerati.computeIfAbsent(key, k -> 
+                                    valoriGenerati.computeIfAbsent(key, k ->
                                     {
                                         List<String> l = new LinkedList<>();
-                                        l.add(randomValue);
+                                        l.add(autoIncremental + "");
                                         return l;
                                     });
+                                    autoIncremental++;
                                 }
-
-                                q.addValue(a.getName(), randomValue);
-                            }
-                            else //caso in cui devo prendere il valore dai valori generati
-                            {
-                            	if (!a.getAutoIncremental()) 
-                            	{
-                                    String randomValue;
-
-                                    boolean insideMap = false;
-
-                                    for (String k : attributiDaSalvare)
-                                        insideMap = attributiDaSalvare.contains(a);
-
-                                    if (insideMap) 
-                                    {
-                                    	String key = "";
-                                        for (String k : attributiDaSalvare)
-                                            if (attributiDaSalvare.contains(a))
-                                                key = k;
-
-                                        List<String> listaValori = valoriGenerati.get(key);
-                                        randomValue = listaValori.get(new Random().nextInt(listaValori.size()));
-                                        q.addValue(a.getName(), randomValue);
-                                    }
-                            	}
                             }
                         }); //chiusura del forEach
                 try { insert(q.build()); }
@@ -300,6 +312,7 @@ public class Database {
                 }
             }
         }
+        autoIncremental = 1;
     }
 
     /**
@@ -307,7 +320,7 @@ public class Database {
      * @param graph
      * @return la lista dei nodi del grafo ordinati in modo topologico
      */
-    private List<Integer> sortTopologico(Map<Integer, List<Coppia>> graph)
+    private List<Integer> sortTopologico(Map<Integer, List<Coppia<Integer, String>>> graph)
     {
         int[] checked = new int[graph.size()];
         List<Integer> sol = new ArrayList<>(graph.size());
@@ -329,10 +342,10 @@ public class Database {
      * @param checked -> lista dei nodi gia controllati
      * @param sol -> la lista finale dei nodi ordinati topologicamente
      */
-    private void DFS(int x, Map<Integer, List<Coppia>> graph, int[] checked, List<Integer> sol)
+    private void DFS(int x, Map<Integer, List<Coppia<Integer, String>>> graph, int[] checked, List<Integer> sol)
     {
         checked[x] = 1;
-        for (Coppia c : graph.get(x))
+        for (Coppia<Integer, String> c : graph.get(x))
         {
             int y = (int) c.getFst();
             if (checked[y] == 0)
