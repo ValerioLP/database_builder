@@ -19,6 +19,9 @@ public class Vincolo {
     public Vincolo(String vincolato, Table referencedTable, String foreignKey) throws IllegalArgumentException {
         if (!referencedTable.checkAttribute(foreignKey))
             throw new IllegalArgumentException("la foreign key fornita non e' presente nella tabella");
+        Attribute a = referencedTable.getAttribute(foreignKey);
+        if (!a.hasIndex())
+            a.setIndex();
         this.vincolato = vincolato;
         this.referencedTable = referencedTable.getName();
         this.foreignKey = foreignKey;

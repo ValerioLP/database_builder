@@ -22,6 +22,7 @@ public class Attribute {
         private boolean autoIncremental;
         private boolean generated;
         private boolean unsigned;
+        private boolean index;
 
         /**
          * Costruttore della classe builder che salva il nome dell'attributo costruito e il tipo di dato
@@ -58,6 +59,7 @@ public class Attribute {
          */
         public AttributeBuilder addUnique() {
             unique = true;
+            index = true;
             return this;
         }
 
@@ -77,6 +79,7 @@ public class Attribute {
          */
         public AttributeBuilder addAutoIncremental() {
             autoIncremental = true;
+            unique = true;
             return this;
         }
 
@@ -120,6 +123,7 @@ public class Attribute {
     private boolean autoIncremental;
     private boolean generated;
     private boolean unsigned;
+    private boolean index;
 
     /**
      * Costruttore della classe attribute che salva tutte le opzioni inserite dal builder 
@@ -135,6 +139,7 @@ public class Attribute {
         autoIncremental = builder.autoIncremental;
         generated = builder.generated;
         unsigned = builder.unsigned;
+        index = builder.index;
     }
 
     /**
@@ -142,6 +147,12 @@ public class Attribute {
      * @return true se l'attributo è chiave, false altrimenti
      */
     public boolean isKey() { return key; }
+
+    /**
+     * metodo che controlla se l'attributo è indicizzato
+     * @return true se l'attributo è indicizzato, false altrimenti
+     */
+    public boolean hasIndex() { return index; }
 
     /**
      * metodo che controlla se l'attributo è not null
@@ -167,7 +178,13 @@ public class Attribute {
      */
     public String getName() { return name; }
 
+    /**
+     * metodo che ritorna il tipo di dato dell'attributo
+     * @return DataType dell'attributo
+     */
     public DataType getType() { return type; }
+
+    public void setIndex() { index = true; };
 
     /**
      * metodo che ritorna la query dell'attributo sottoforma di stringa

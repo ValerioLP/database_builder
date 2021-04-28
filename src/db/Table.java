@@ -169,6 +169,11 @@ public class Table {
                 .filter(x -> x.isUnique())
                 .forEach(x -> out.append("unique index " + x.getName() 
                 + "_unique (" + x.getName() + " ASC) visible, "));
+        //aggiungo gli incidici
+        attributes.stream()
+                .filter(x -> x.hasIndex())
+                .forEach(x -> out.append("index " + x.getName()
+                + " (" + x.getName() + " ASC) visible, "));
        //controllo se ci sono vincoli e li aggiungo nella query
         if (!vincoli.isEmpty())
             vincoli.forEach(x -> out.append("constraint " + x.getVincolato() + " foreign key (" +
@@ -176,7 +181,7 @@ public class Table {
                     + x.getForeignKey() + ") on delete no action on update no action, "));
         out.delete(out.length() - 2, out.length());
         //ritorno la query sottoforma di stringa
-        return out.append(");").toString();
+        return out.append(")").toString();
     }
 
     @Override
