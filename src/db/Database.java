@@ -183,11 +183,17 @@ public class Database {
     /**
      * popola il db con entry casuali
      */
-    public void randomPopulate() 
+    public void randomPopulate() { randomPopulate(1000); }
+
+    /**
+     * popola il db con entry casuali
+     * @param n numero di entry per table che verranno generate
+     */
+    public void randomPopulate(int n)
     {
         //dizionario che mappa ogni table a un numero
         Map<Table, Integer> tableToInt = new HashMap<>();
-        
+
         //popoliamo la mappa
         for (int i = 0; i < tables.size(); i++)
             tableToInt.put(tables.get(i), i);
@@ -203,7 +209,7 @@ public class Database {
 
         //facendo il sort topologico sul grafo otteniamo la lista ordinata delle table da popolare
         List<Integer> tableSortInt = sortTopologico(graph);
-        List<Table> tableSort = tableSortInt.stream().map(i -> 
+        List<Table> tableSort = tableSortInt.stream().map(i ->
         {
             for (Table t : tableToInt.keySet())
                 if ((int)tableToInt.get(t) == i)
@@ -230,14 +236,14 @@ public class Database {
             }
 
             //popoliamo ogni table con 1000 occorrenze
-            for (int j = 0; j < 1000; j++)
+            for (int j = 0; j < n; j++)
             {
                 Table t = tableSort.get(i);
                 Insert.QueryBuilder q = new Insert.QueryBuilder(this, t.getName());
 
                 t.getAttributes()
                         .stream()
-                        .forEach(a -> 
+                        .forEach(a ->
                         {
                             if (!a.getAutoIncremental()) //se l'attributo non è autoincremental
                             {
@@ -306,7 +312,7 @@ public class Database {
                             }
                         }); //chiusura del forEach
                 try { insert(q.build()); }
-                catch (SQLException e) 
+                catch (SQLException e)
                 {
                     e.printStackTrace();
                 }
