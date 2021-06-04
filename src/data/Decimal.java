@@ -17,7 +17,7 @@ public final class Decimal extends DataType
      */
     private int precision;
 
-    public Decimal(int decimals, int precision)
+    public Decimal(int decimals, int precision) throws IllegalArgumentException
     {
         super("decimal", true);
         this.decimals = decimals;
