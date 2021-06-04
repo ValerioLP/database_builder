@@ -20,6 +20,8 @@ public final class Decimal extends DataType
     public Decimal(int decimals, int precision) throws IllegalArgumentException
     {
         super("decimal", true);
+        if (precision > decimals)
+            throw new IllegalArgumentException("il numero di cifre decimali dopo la virgola deve essere >= al numero di cifre decimali prima della virgola");
         this.decimals = decimals;
         this.precision = precision;
     }
