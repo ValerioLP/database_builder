@@ -366,6 +366,13 @@ public class Database {
      * @throws SQLException 
      */
     public void insert(Query query) throws SQLException { executeQuery(query.toString()); }
+    
+    /**
+     * metodo specifico per l'esecuzione di query di tipo select
+     * @param query l'istanza della query ObjOr
+     * @throws SQLException 
+     */
+    public void select(Query query) throws SQLException { executeQuery(query.toString()); }
 
     @Override
     public String toString() { return name + " " + url; }

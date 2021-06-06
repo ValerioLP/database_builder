@@ -209,14 +209,12 @@ public class Attribute {
     /**
      * metodo che controlla se l'attributo dato in input e compatibile con l'attributo
      * su cui viene applicato il metodo.
-     * Esso controlla se sono dello stesso tipo e se entrambi hanno le stesse opzioni di
-     * not null e zero fill
+     * Esso controlla se sono dello stesso tipo e se entrambi hanno le stesse opzioni di zero fill
      * @param a attributo da controllare
      * @return true se a è compatibile con this, false altrimenti
      */
     public boolean compatibleTo(Attribute a) {
         return type.equals(a.type) &&
-                ((notNull && a.notNull) || (!notNull && !a.notNull)) &&
                 ((fill && a.fill) || (!fill && !a.fill));
     }
 
