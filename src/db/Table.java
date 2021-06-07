@@ -1,5 +1,7 @@
 package db;
 
+import utility.Trigger;
+
 import java.util.*;
 import java.util.stream.Collectors;
 

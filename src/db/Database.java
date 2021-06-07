@@ -6,6 +6,7 @@ import exceptions.ForeignKeyException;
 import utility.Coppia;
 import utility.Insert;
 import utility.Query;
+import utility.Trigger;
 
 import java.sql.*;
 import java.util.*;
@@ -28,6 +29,7 @@ public class Database {
         private Account account;
 
         private List<Table> tables = new ArrayList<>();
+        private List<Trigger> triggers = new ArrayList<>();
 
         /**
          * Costruttore della classe builder che salva:
@@ -48,6 +50,17 @@ public class Database {
          */
         public DatabaseBuilder addTable(Table table) {
             tables.add(table);
+            return this;
+        }
+
+        /**
+         *  metodo che aggiunge un trigger al db
+         * @param trigger trigger da aggiungere al table
+         * @return l'istanza del table builder
+         */
+        public DatabaseBuilder addTrigger(Trigger trigger)
+        {
+            triggers.add(trigger);
             return this;
         }
 
@@ -88,6 +101,7 @@ public class Database {
     Connection conn = null;
 
     private List<Table> tables = new ArrayList<>();
+    private List<Trigger> triggers = new ArrayList<>();
 
     /**
      * costruttore della classe Database. Salva il nome del database, l'url del server mySQL
@@ -99,6 +113,7 @@ public class Database {
         name = builder.name;
         url = builder.url;
         tables.addAll(builder.tables);
+        triggers.addAll(builder.triggers);
         query = CREATE + name + ";\n" + USE + name + ";\n";
 
         System.out.println("loading drivers...");
@@ -148,7 +163,11 @@ public class Database {
         //per ogni tabella del database andiamo a creare la rispettiva query in stringa
         // dando vita a una lunga stringa fatta da tutte le query da eseguire in mySQL
         tables.forEach(x -> query += x.getQuery() + ";\n");
-            
+
+        //per ogni trigger nel database andiamo a creare la rispettiva query in stringa
+        //da aggiungere alla stringa creata sopra
+        triggers.forEach(t -> query += t.toString() + ";\n");
+
         //prima di eseguirle tutte come unica stringa...
         //splittiamo le query per poterle eseguire una alla volta e non tutte insieme.
         String[] queries = query.split("\n");
