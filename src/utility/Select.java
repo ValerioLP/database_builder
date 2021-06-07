@@ -33,7 +33,7 @@ public final class Select extends Query {
     
 	
     /**
-     * Costruttore della classe Insert che salva la query generata dal builder
+     * Costruttore della classe Select che salva la query generata dal builder
      * @param builder query builder
      */
     private Select(QueryBuilder builder) { super(builder.query); }

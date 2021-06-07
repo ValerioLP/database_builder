@@ -220,6 +220,8 @@ public class Database {
         //costruisco una mappa da table.attribute a valori generati per quell'attributo
         Map<String, List<String>> valoriGenerati = new HashMap<>();
 
+//        tableSort.forEach(x -> System.out.println(x));
+        
         //iteriamo su ogni table in tableSort
         for (int i = 0; i < tableSort.size(); i++)
         {
@@ -235,7 +237,7 @@ public class Database {
                 }
             }
 
-            //popoliamo ogni table con 1000 occorrenze
+            //popoliamo ogni table con n occorrenze
             for (int j = 0; j < n; j++)
             {
                 Table t = tableSort.get(i);
@@ -247,7 +249,7 @@ public class Database {
                         {
                             if (!a.getAutoIncremental()) //se l'attributo non è autoincremental
                             {
-                                if (t.getVincoli().stream().noneMatch(v -> v.getVincolato().equals(a.getName()))) //caso in cui devo generare un calore casuale
+                                if (t.getVincoli().stream().noneMatch(v -> v.getVincolato().equals(a.getName()))) //caso in cui devo generare un valore casuale
                                 {
                                     //creo un valore random sul dominio del tipo
                                     String randomValue = a.getType().randomize();
@@ -280,11 +282,32 @@ public class Database {
                                             .reduce((x, y) -> x)
                                             .orElse(null);
 
-                                    String key = v.getReferencedTable() + "." + v.getForeignKey();
+                                    String key = v.getReferencedTable() + "." + v.getForeignKey();                                    
 
                                     List<String> listaValori = valoriGenerati.get(key);
                                     String randomValue = listaValori.get(new Random().nextInt(listaValori.size()));
 
+                                    //se l'attributo è contenuto nell'insieme degli attributi è da salvare
+                                    if (attributiDaSalvare.contains(a.getName())) {
+                                        //genero la chiave nel formato table.attribute
+                                        key = t.getName() + "." + a.getName();
+
+                                        //se la chiave è presente nella mappa allora aggiungo il valore all'insieme
+                                        valoriGenerati.computeIfPresent(key, (k, val) -> {
+                                            val.add(randomValue);
+                                            return val;
+                                        });
+
+                                        //se la chiave non è presente nella mappa allora creo un insieme e ci aggiungo il valore
+                                        valoriGenerati.computeIfAbsent(key, k ->
+                                        {
+                                            List<String> l = new LinkedList<>();
+                                            l.add(randomValue);
+                                            return l;
+                                        });
+                                    }
+                                    q.addValue(a.getName(), randomValue);
+                                    
                                     q.addValue(a.getName(), randomValue);
                                 }
                             }
@@ -317,8 +340,8 @@ public class Database {
                     e.printStackTrace();
                 }
             }
+            autoIncremental = 1;
         }
-        autoIncremental = 1;
     }
 
     /**

@@ -9,7 +9,7 @@ public final class Int extends DataType
 {
     private int decimals;
 
-    public Int() { this(10); }
+    public Int() { this(9); }
 
     public Int(int decimals) {
         super("int", true);
@@ -20,7 +20,7 @@ public final class Int extends DataType
     public String randomize() {
         StringBuilder out = new StringBuilder();
         Random r = new Random();
-        for (int i = 0; i < decimals - 1 ; i++)
+        for (int i = 0; i < decimals; i++)
             out.append(r.nextInt(10));
         return out.toString();
     }

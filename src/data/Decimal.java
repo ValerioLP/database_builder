@@ -32,7 +32,7 @@ public final class Decimal extends DataType
         StringBuilder out = new StringBuilder();
         for (int i = 0; i < digits - precision; i++)
             out.append(r.nextInt(10));
-        out.append(",");
+        out.append(".");
         for (int i = 0; i < precision; i++)
             out.append(r.nextInt(10));
         return out.toString();
