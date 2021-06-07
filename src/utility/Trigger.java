@@ -30,7 +30,7 @@ public class Trigger extends Query {
      */
     public Trigger(Table table, String triggerName, Timing timing, Action action, Granularity granularity, String body) throws IllegalArgumentException {
         super(TRIGGER + triggerName.toLowerCase() + " " + timing.toString().toLowerCase() + " " + action.toString().toLowerCase() +
-                " ON " + table.getName() + " for each " + granularity.toString().toLowerCase() + " begin " + body + " end");
+                " on " + table.getName() + " for each " + granularity.toString().toLowerCase() + " begin " + body + " end");
         body.replace("\n", "");
     }
 
