@@ -8,21 +8,21 @@ import java.util.Random;
 public final class Decimal extends DataType
 {
     /**
-     * cifre decimali prima della virgola
+     * numero totale di cifre decimali
      */
-    private int decimals;
+    private int digits;
 
     /**
      * cifre decimali dopo la virgola
      */
     private int precision;
 
-    public Decimal(int decimals, int precision) throws IllegalArgumentException
+    public Decimal(int digits, int precision) throws IllegalArgumentException
     {
         super("decimal", true);
-        if (precision > decimals)
+        if (precision > digits)
             throw new IllegalArgumentException("il numero di cifre decimali dopo la virgola deve essere >= al numero di cifre decimali prima della virgola");
-        this.decimals = decimals;
+        this.digits = digits;
         this.precision = precision;
     }
 
@@ -30,7 +30,7 @@ public final class Decimal extends DataType
     public String randomize() {
         Random r = new Random();
         StringBuilder out = new StringBuilder();
-        for (int i = 0; i < decimals; i++)
+        for (int i = 0; i < digits - precision; i++)
             out.append(r.nextInt(10));
         out.append(",");
         for (int i = 0; i < precision; i++)
@@ -39,5 +39,5 @@ public final class Decimal extends DataType
     }
 
     @Override
-    public String toString() { return super.toString() + "(" + decimals + ", " + precision + ")"; }
+    public String toString() { return super.toString() + "(" + digits + ", " + precision + ")"; }
 }
