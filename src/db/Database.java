@@ -200,7 +200,6 @@ public class Database {
             System.out.println("query #" + queryCounter++ + " eseguita correttamente");
         }
         catch(SQLException e) {
-            //System.out.println(stmt.getWarnings());
             throw new SQLException("error occured during query execution:\n" + stmt.getWarnings() + "\n\"" + query.substring(0,query.length()-1) + "\"\n");
         }
     }
