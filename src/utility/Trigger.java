@@ -12,13 +12,9 @@ public class Trigger extends Query {
      */
     static final String TRIGGER = "create definer = current_user trigger ";
 
-    private String tableName;
-    private String query;
     private String triggerName;
 
-    private Timing timing;
-
-    private Action action;
+    private Table table;
 
     /**
      * costruttore della classe trigger
@@ -32,9 +28,11 @@ public class Trigger extends Query {
         super(TRIGGER + triggerName.toLowerCase() + " " + timing.toString().toLowerCase() + " " + action.toString().toLowerCase() +
                 " on " + table.getName() + " for each " + granularity.toString().toLowerCase() + " begin " + body + " end");
         body.replace("\n", "");
+        this.table = table;
+        this.triggerName = triggerName;
     }
 
     public String getTriggerName() { return triggerName; }
 
-    public String getTableName() { return tableName; }
+    public String getTableName() { return table.getName(); }
 }
