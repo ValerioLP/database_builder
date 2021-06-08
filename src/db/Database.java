@@ -99,6 +99,7 @@ public class Database {
     private String query;
 
     private int autoIncremental = 1;
+    private int queryCounter = 1;
 
     Connection conn = null;
 
@@ -118,23 +119,25 @@ public class Database {
         triggers.addAll(builder.triggers);
         query = CREATE + name + ";\n" + USE + name + ";\n";
 
-        System.out.println("loading drivers...");
-
         //prova a caricare i drivers
-        try { Class.forName(DRIVERS); }
+        System.out.println("loading drivers...");
+        try {
+            Class.forName(DRIVERS);
+            System.out.println("driver loaded");
+        }
         catch(ClassNotFoundException e) {
             throw new DriverNotFoundException("error occured during driver loading");
         }
-        System.out.println("driver loaded");
 
         //prova a connettersi al database
         System.out.println("connecting to db...");
-
-        try { conn = DriverManager.getConnection(url, builder.account.getUsername(), builder.account.getPassword()); }
+        try {
+            conn = DriverManager.getConnection(url, builder.account.getUsername(), builder.account.getPassword());
+            System.out.println("connection established");
+        }
         catch(SQLException e) {
             throw new SQLException("error occured during db connection");
         }
-        System.out.println("connection established");
 
         //esegue le query in sql creando il database
         create();
@@ -178,8 +181,7 @@ public class Database {
         for (int i = 0; i < queries.length; i++) {
             try { executeQuery(queries[i]); }
             catch(SQLException e) { e.printStackTrace(); }
-            int k = i + 1;
-            System.out.println("query #" + k + " eseguita correttamente");
+
         }
     }
     
@@ -195,9 +197,10 @@ public class Database {
             stmt = conn.createStatement();
             System.out.println(query);
             stmt.execute(query);
+            System.out.println("query #" + queryCounter++ + " eseguita correttamente");
         }
         catch(SQLException e) {
-            throw new SQLException("error occured during query execution");
+            throw new SQLException("error occured during query execution: \"" + query + "\"");
         }
     }
 
