@@ -34,5 +34,7 @@ public class Trigger extends Query {
         body.replace("\n", "");
     }
 
+    public String getTriggerName() { return triggerName; }
+
     public String getTableName() { return tableName; }
 }

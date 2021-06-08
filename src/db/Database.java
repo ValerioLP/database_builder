@@ -60,6 +60,7 @@ public class Database {
          */
         public DatabaseBuilder addTrigger(Trigger trigger)
         {
+            if (triggers.stream().anyMatch(t -> t.getTriggerName().equals(trigger.getTriggerName())))
             triggers.add(trigger);
             return this;
         }
