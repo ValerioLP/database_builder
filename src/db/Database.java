@@ -58,9 +58,10 @@ public class Database {
          * @param trigger trigger da aggiungere al table
          * @return l'istanza del table builder
          */
-        public DatabaseBuilder addTrigger(Trigger trigger)
+        public DatabaseBuilder addTrigger(Trigger trigger) throws IllegalArgumentException
         {
             if (triggers.stream().anyMatch(t -> t.getTriggerName().equals(trigger.getTriggerName())))
+                throw new IllegalArgumentException("il nome dei trigger deve essere univoco");
             triggers.add(trigger);
             return this;
         }
