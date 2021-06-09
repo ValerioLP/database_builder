@@ -32,6 +32,9 @@ public class Trigger extends Query {
         this.triggerName = triggerName;
     }
 
+
+
+    //JAVADOC
     public String getTriggerName() { return triggerName; }
 
     public String getTableName() { return table.getName(); }

@@ -1,6 +1,5 @@
 package utility;
 
-import db.Database;
 import db.Table;
 
 import java.util.TreeMap;
@@ -21,18 +20,14 @@ public final class Insert extends Query {
         private String tableName;
         private String query;
 
-        private Database db;
-
         private TreeMap<String, String> attributes = new TreeMap<>();
 
         /**
          * costruttore della classe builder
-         * @param db database
-         * @param tableName nome del table
+         * @param tableName table nel quale va fatta l'insert
          */
-        public QueryBuilder(Database db, String tableName) {
+        public QueryBuilder(String tableName) {
             this.tableName  = tableName;
-            this.db = db;
         }
 
         /**
@@ -49,25 +44,8 @@ public final class Insert extends Query {
         /**
          * builder della classe che dopo aver fatto i controlli sulla query la crea
          * @return l'istanza della query costruita
-         * @throws IllegalArgumentException se la tabella o gli attributi inseriti non sono presenti nel db
-         * oppure se ci sono attibuti obbligatori non inseriti
          */
-        public Query build() throws IllegalArgumentException {
-            Table t = db.getTable(tableName.toLowerCase());
-
-            //controlliamo che la tabella e gli attributi passati in input sono presenti nel db
-            if (t == null) { throw new IllegalArgumentException("la tabella inserita non è presente nel db"); }
-            if (!attributes.keySet()
-                    .stream()
-                    .allMatch(x -> t.getAttribute(x) == null ?  false : t.getAttribute(x).getName().equals(x)))
-                throw new IllegalArgumentException("uno o piu degli attributi inseriti non è presente nel table");
-            if (!t.getAttributes()
-                    .stream()
-                    .filter(x -> x.isNotNull())
-                    .filter(x -> !x.getAutoIncremental())
-                    .allMatch(x -> attributes.keySet().contains(x.getName())))
-                throw new IllegalArgumentException("uno o piu attributi obbligatori non sono stati inseriti nella lista");
-
+        public Query build() {
             //cominciamo a costruire la query sottoforma di stringa
             StringBuilder query = new StringBuilder(INSERT);
             query.append(tableName + " (");

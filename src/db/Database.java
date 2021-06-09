@@ -142,7 +142,44 @@ public class Database {
         //esegue le query in sql creando il database
         create();
     }
-    
+
+    /**
+     * Costruttore privato della classe database
+     * @param url del server a cui connettersi
+     * @param databaseName nome del server a cui connettersi
+     * @param account dell'utente a cui connettersi
+     * @throws SQLException se non è stato possibile connettersi al db
+     */
+    private Database(String url, String databaseName, Account account) throws SQLException
+    {
+        this.url = url;
+        this.name = databaseName;
+        //prova a connettersi al database
+        System.out.println("connecting to db...");
+        try {
+            conn = DriverManager.getConnection(url, account.getUsername(), account.getPassword());
+            System.out.println("connection established");
+        }
+        catch(SQLException e) {
+            throw new SQLException("error occured during db connection");
+        }
+        query = "use " + databaseName;
+        executeQuery(query);
+    }
+
+    /**
+     * metodo che ritorna la connessione al db passato in input
+     * @param url del server a cui connettersi
+     * @param databaseName nome del server a cui connettersi
+     * @param account dell'utente a cui connettersi
+     * @return l'istanza di connessione al db
+     * @throws SQLException se non è stato possibile connettersi al db
+     */
+    public static Database connect(String url, String databaseName, Account account) throws SQLException
+    {
+        return new Database(url, databaseName, account);
+    }
+
     /**
      * metoto getter
      * @param tableName prende un nome di una tabella in input
@@ -243,8 +280,6 @@ public class Database {
 
         //costruisco una mappa da table.attribute a valori generati per quell'attributo
         Map<String, List<String>> valoriGenerati = new HashMap<>();
-
-//        tableSort.forEach(x -> System.out.println(x));
         
         //iteriamo su ogni table in tableSort
         for (int i = 0; i < tableSort.size(); i++)
@@ -265,7 +300,7 @@ public class Database {
             for (int j = 0; j < n; j++)
             {
                 Table t = tableSort.get(i);
-                Insert.QueryBuilder q = new Insert.QueryBuilder(this, t.getName());
+                Insert.QueryBuilder q = new Insert.QueryBuilder(t.getName());
 
                 t.getAttributes()
                         .stream()
@@ -358,7 +393,7 @@ public class Database {
                                 }
                             }
                         }); //chiusura del forEach
-                try { insert(q.build()); }
+                try { executeQuery(q.build()); }
                 catch (SQLException e)
                 {
                     e.printStackTrace();
@@ -408,18 +443,32 @@ public class Database {
     }
 
     /**
-     * metodo specifico per l'esecuzione di query di tipo insert
+     * metodo specifico per l'esecuzione di query CRUD
      * @param query l'istanza della query ObjOr
-     * @throws SQLException 
+     * @throws IllegalArgumentException se la tabella o gli attributi inseriti non sono presenti nel db
+     * oppure se ci sono attibuti obbligatori non inseriti
+     * @throws SQLException se la query non viene eseguita correttamente
      */
-    public void insert(Query query) throws SQLException { executeQuery(query.toString()); }
-    
-    /**
-     * metodo specifico per l'esecuzione di query di tipo select
-     * @param query l'istanza della query ObjOr
-     * @throws SQLException 
-     */
-    public void select(Query query) throws SQLException { executeQuery(query.toString()); }
+    public void executeQuery(Query query) throws SQLException
+    {
+/*
+        Table t = getTable("x")
+
+        //controlliamo che la tabella e gli attributi passati in input sono presenti nel db
+        if (t == null) { throw new IllegalArgumentException("la tabella inserita non è presente nel db"); }
+        if (!attributes.keySet()
+                .stream()
+                .allMatch(x -> t.getAttribute(x) == null ?  false : t.getAttribute(x).getName().equals(x)))
+            throw new IllegalArgumentException("uno o piu degli attributi inseriti non è presente nel table");
+        if (!t.getAttributes()
+                .stream()
+                .filter(x -> x.isNotNull())
+                .filter(x -> !x.getAutoIncremental())
+                .allMatch(x -> attributes.keySet().contains(x.getName())))
+            throw new IllegalArgumentException("uno o piu attributi obbligatori non sono stati inseriti nella lista");
+ */
+        executeQuery(query.toString());
+    }
 
     @Override
     public String toString() { return name + " " + url; }
