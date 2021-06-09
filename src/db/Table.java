@@ -178,7 +178,7 @@ public class Table {
                 + " (" + x.getName() + " ASC) visible, "));
        //controllo se ci sono vincoli e li aggiungo nella query
         if (!vincoli.isEmpty())
-            vincoli.forEach(x -> out.append("constraint " + x.getVincolato() + " foreign key (" +
+            vincoli.forEach(x -> out.append("constraint " + name + "_" + x.getVincolato() + " foreign key (" +
                     x.getVincolato() + ") references " + x.getReferencedTable() + " ("
                     + x.getForeignKey() + ") on delete no action on update no action, "));
         out.delete(out.length() - 2, out.length());
