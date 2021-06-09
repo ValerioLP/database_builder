@@ -32,10 +32,15 @@ public class Trigger extends Query {
         this.triggerName = triggerName;
     }
 
-
-
-    //JAVADOC
+    /**
+     * metodo getter che ritorna il nome del trigger
+     * @return nome del trigger
+     */
     public String getTriggerName() { return triggerName; }
 
+    /**
+     * metodo getter che ritorna il nome del table sul quale funziona il trigger
+     * @return nome del table
+     */
     public String getTableName() { return table.getName(); }
 }
