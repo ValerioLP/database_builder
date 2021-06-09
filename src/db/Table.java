@@ -180,7 +180,7 @@ public class Table {
         if (!vincoli.isEmpty())
             vincoli.forEach(x -> out.append("constraint " + name + "_" + x.getVincolato() + " foreign key (" +
                     x.getVincolato() + ") references " + x.getReferencedTable() + " ("
-                    + x.getForeignKey() + ") on delete no action on update no action, "));
+                    + x.getForeignKey() + ") on delete restrict on update cascade, "));
         out.delete(out.length() - 2, out.length());
         //ritorno la query sottoforma di stringa
         return out.append(")").toString();
