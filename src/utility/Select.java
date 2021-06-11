@@ -47,6 +47,10 @@ public final class Select extends Query {
             attributes.forEach(a -> addAttribute(a));
         }
 
+        /**
+         * metodo privato che aggiunge un'attributo tra quelli da selezionare nella query di select
+         * @param attribute attributo da selezionare
+         */
         private void addAttribute(String attribute)
         {
             attribute = attribute.toLowerCase();
@@ -54,6 +58,11 @@ public final class Select extends Query {
                 attributes.add(attribute);
         }
 
+        /**
+         * metodo che aggiunge un table name alla query di select
+         * @param tableName nome del table incluso nella query
+         * @return l'istanza del query builder
+         */
         public QueryBuilder addTable(String tableName)
         {
             tableName = tableName.toLowerCase();
@@ -62,6 +71,11 @@ public final class Select extends Query {
             return this;
         }
 
+        /**
+         * metodo che aggiunge un attributo a quelli su cui fare il group by nella query
+         * @param attribute nome dell'attributo da aggiungere
+         * @return l'istanza del query builder
+         */
         public QueryBuilder addGroupBy(String attribute)
         {
             attribute = attribute.toLowerCase();
@@ -70,6 +84,11 @@ public final class Select extends Query {
             return this;
         }
 
+        /**
+         * metodo che aggiunge un attributo su cui ordinare
+         * @param attribute nome dell'attributo su cui ordinare
+         * @return l'istanza del query builder
+         */
         public QueryBuilder addOrderBy(String attribute) throws IllegalArgumentException
         {
             if (orderBy != null)
@@ -78,6 +97,11 @@ public final class Select extends Query {
             return this;
         }
 
+        /**
+         * metodo che aggiunge un limite alle righe da visualizzare
+         * @param maxRow numero massimo di righe da visualizzare
+         * @return l'istanza del query builder
+         */
         public QueryBuilder limit(int maxRow) throws IllegalArgumentException
         {
             if (maxRow != 0)
@@ -86,6 +110,11 @@ public final class Select extends Query {
             return this;
         }
 
+        /**
+         * metodo che aggiunge tutte le condizioni di where alla query
+         * @param conditions stringa formattata con il where della query
+         * @return l'istanza del query builder
+         */
         public QueryBuilder addWhere(String conditions) throws IllegalArgumentException
         {
             if (where != null)
@@ -94,6 +123,11 @@ public final class Select extends Query {
             return this;
         }
 
+        /**
+         * metodo che aggiunge tutte le condizioni all'having della query
+         * @param conditions stringa formattata con l'having della query
+         * @return l'istanza del query builder
+         */
         public QueryBuilder addHaving(String conditions) throws IllegalArgumentException
         {
             if (having != null)

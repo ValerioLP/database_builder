@@ -233,11 +233,63 @@ public class Database {
         try {
             stmt = conn.createStatement();
             System.out.println(query);
-            stmt.execute(query);
-            System.out.println("query #" + queryCounter++ + " eseguita correttamente");
+
+            if (query.substring(0,6).equals("select")) {
+                ResultSet out = stmt.executeQuery(query);
+                System.out.println("query #" + queryCounter++ + " eseguita correttamente");
+
+                ResultSetMetaData metaData = out.getMetaData();
+
+                int columnCount = metaData.getColumnCount();
+
+                //costruiamo l'output di una query
+                StringBuilder queryOutput = new StringBuilder("+");
+
+                int[] max_length = new int[columnCount];
+
+                //per ogni colonna costruiamo la prima riga della query
+                for (int i = 1; i <= columnCount  ; i++) {
+
+                    int columnSize = metaData.getColumnDisplaySize(i);
+                    max_length[i-1] = Math.max(columnSize, metaData.getColumnName(i).length());
+                    queryOutput.append("-".repeat(max_length[i-1] + 2) + "+");
+                }
+                queryOutput.append("\n|");
+
+                String primaRiga = queryOutput.substring(0,queryOutput.length()-1);
+
+                //per ogni colonna costruiamo la seconda riga della query
+                for (int i = 1; i <= columnCount  ; i++) {
+                    String column_name = metaData.getColumnName(i);
+                    queryOutput.append(" " + column_name + " ".repeat(max_length[i-1] - column_name.length()) + " |");
+                }
+                queryOutput.append("\n" + primaRiga);
+
+                int countRows = 0;
+
+                //per ogni riga della query e per ogni colonna inseriamo l'output
+                while (out.next()) {
+                    countRows++;
+                    queryOutput.append("| ");
+                    for (int i = 1; i <= columnCount  ; i++) {
+                        String result = out.getString(i);
+                        queryOutput.append(result + " ".repeat(max_length[i-1] - result.length()) + " | ");
+                    }
+                    queryOutput.append("\n");
+                }
+
+                if (countRows > 0)
+                    queryOutput.append(primaRiga.substring(0, primaRiga.length()-1));
+
+                System.out.println(queryOutput.toString());
+            }
+            else {
+                stmt.execute(query);
+                System.out.println("query #" + queryCounter++ + " eseguita correttamente");
+            }
         }
         catch(SQLException e) {
-            throw new SQLException("error occured during query execution:\n" + stmt.getWarnings() + "\n\"" + query.substring(0,query.length()-1) + "\"\n");
+            throw new SQLException("error occured during query execution:\n" + stmt.getWarnings() + "\n\"" + query.replace(";", "") + "\"\n");
         }
     }
 
