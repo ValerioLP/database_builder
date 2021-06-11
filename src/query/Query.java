@@ -1,4 +1,4 @@
-package utility;
+package query;
 
 /**
  * @author Luca Mattei, Valerio Mezzoprete

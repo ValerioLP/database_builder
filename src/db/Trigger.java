@@ -1,6 +1,9 @@
-package utility;
+package db;
 
-import db.Table;
+import query.Query;
+import utility.Action;
+import utility.Granularity;
+import utility.Timing;
 
 /**
  * @author Luca Mattei, Valerio Mezzoprete

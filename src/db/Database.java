@@ -4,9 +4,8 @@ import data.Account;
 import exceptions.DriverNotFoundException;
 import exceptions.ForeignKeyException;
 import utility.Coppia;
-import utility.Insert;
-import utility.Query;
-import utility.Trigger;
+import query.Insert;
+import query.Query;
 
 import java.sql.*;
 import java.util.*;
@@ -117,7 +116,7 @@ public class Database {
         url = builder.url;
         tables.addAll(builder.tables);
         triggers.addAll(builder.triggers);
-        query = CREATE + name + ";\n" + USE + name + ";\n";
+        query = CREATE + name + "\n" + USE + name + "\n";
 
         //prova a caricare i drivers
         System.out.println("loading drivers...");
@@ -204,11 +203,11 @@ public class Database {
     private void create() {
         //per ogni tabella del database andiamo a creare la rispettiva query in stringa
         // dando vita a una lunga stringa fatta da tutte le query da eseguire in mySQL
-        tables.forEach(x -> query += x.getQuery() + ";\n");
+        tables.forEach(x -> query += x.getQuery() + "\n");
 
         //per ogni trigger nel database andiamo a creare la rispettiva query in stringa
         //da aggiungere alla stringa creata sopra
-        triggers.forEach(t -> query += t.toString() + ";\n");
+        triggers.forEach(t -> query += t.toString() + "\n");
 
         //prima di eseguirle tutte come unica stringa...
         //splittiamo le query per poterle eseguire una alla volta e non tutte insieme.
@@ -289,7 +288,7 @@ public class Database {
             }
         }
         catch(SQLException e) {
-            throw new SQLException("error occured during query execution:\n" + stmt.getWarnings() + "\n\"" + query.replace(";", "") + "\"\n");
+            throw new SQLException("error occured during query execution:\n" + stmt.getWarnings() + "\n\"" + query + "\"\n");
         }
     }
 
