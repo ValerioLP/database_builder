@@ -6,8 +6,8 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Classe utilizzata per creare delle query di selezione dalle tabelle.
- * Sfruttata principalmente per essere data in pasto al metodo select della classe Database.
+ * Classe utilizzata per creare delle query di selezione dalle tabelle
+ * Sfruttata principalmente per essere data in pasto al metodo executeQuery della classe Database
  * @author Luca Mattei, Valerio Mezzoprete
  */
 public final class Select extends Query {

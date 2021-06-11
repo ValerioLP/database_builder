@@ -272,7 +272,7 @@ public class Database {
                     queryOutput.append("| ");
                     for (int i = 1; i <= columnCount  ; i++) {
                         String result = out.getString(i);
-                        queryOutput.append(result + " ".repeat(max_length[i-1] - result.length()) + " | ");
+                            queryOutput.append(result + " ".repeat(max_length[i-1] - (result == null ? 4 : result.length())) + " | ");
                     }
                     queryOutput.append("\n");
                 }

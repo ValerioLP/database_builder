@@ -3,8 +3,8 @@ package query;
 import java.util.TreeMap;
 
 /**
- * Classe utilizzata per creare delle query di inserimento.
- * Sfruttata principalmente per essere data in pasto al metodo insert della classe Database.
+ * Classe utilizzata per creare delle query di inserimento nelle tabelle
+ * Sfruttata principalmente per essere data in pasto al metodo executeQuery della classe Database.
  * @author Luca Mattei, Valerio Mezzoprete
  */
 public final class Insert extends Query {
@@ -55,7 +55,7 @@ public final class Insert extends Query {
             attributes.forEach((k, v) -> query.append(k + ", "));
             query.delete(query.length() -2, query.length()).append(") values (");
             attributes.forEach((k, v) -> query.append("\"" + v + "\", "));
-            query.delete(query.length() -2, query.length()).append(");");
+            query.delete(query.length() -2, query.length()).append(")");
 
             this.query = query.toString();
 

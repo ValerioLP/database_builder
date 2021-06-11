@@ -3,8 +3,8 @@ package query;
 import java.util.TreeMap;
 
 /**
- * Classe utilizzata per creare delle query di update.
- * Sfruttata principalmente per essere data in pasto al metodo  della classe Database.
+ * Classe utilizzata per creare delle query di update
+ * Sfruttata principalmente per essere data in pasto al metodo executeQuery della classe Database
  * @author Luca Mattei, Valerio Mezzoprete
  */
 public class Update extends Query {
