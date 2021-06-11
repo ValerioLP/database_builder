@@ -4,6 +4,7 @@ import db.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -32,20 +33,15 @@ public final class Select extends Query {
 
         /**
          * costruttore generale della classe builder
-         * @param attributes array di attributi della select
+         * @param attributes lista di attributi della select
          */
-        public QueryBuilder(String[] attributes) {
-            this(Arrays.asList(attributes));
-        }
+        public QueryBuilder(String... attributes) { this(Arrays.asList(attributes)); }
 
         /**
          * costruttore specifico della classe builder
          * @param attributes array di attributi della select
          */
-        public QueryBuilder(List<String> attributes)
-        {
-            attributes.forEach(a -> addAttribute(a));
-        }
+        public QueryBuilder(Collection<String> attributes) { attributes.forEach(a -> addAttribute(a)); }
 
         /**
          * metodo privato che aggiunge un'attributo tra quelli da selezionare nella query di select
@@ -142,6 +138,9 @@ public final class Select extends Query {
          */
         public Query build()
         {
+            if (tableNames.size() == 0)
+                throw new IllegalArgumentException("la select prevede almeno una tabella per eseguire la query con la clausula from");
+
             //cominciamo a costruire la query sottoforma di stringa
             StringBuilder query = new StringBuilder(SELECT);
 
