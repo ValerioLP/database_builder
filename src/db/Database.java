@@ -229,13 +229,15 @@ public class Database {
     private void executeQuery(String query) throws SQLException {
         //prova a creare una connessione con mySQL per permettere l'utilizzo delle query
         Statement stmt = null;
-        try {
-            stmt = conn.createStatement();
-            System.out.println(query);
+            try {
+                stmt = conn.createStatement();
+                System.out.println(query);
 
-            if (query.substring(0,6).equals("select")) {
+                queryCounter++;
+
+                if (query.substring(0,6).equals("select")) {
                 ResultSet out = stmt.executeQuery(query);
-                System.out.println("query #" + queryCounter++ + " eseguita correttamente");
+                System.out.println("query #" + queryCounter + " eseguita correttamente");
 
                 ResultSetMetaData metaData = out.getMetaData();
 
@@ -281,15 +283,16 @@ public class Database {
                     queryOutput.append(primaRiga.substring(0, primaRiga.length()-1));
 
                 System.out.println(queryOutput.toString());
-            }
-            else {
+                }
+                else {
                 stmt.execute(query);
-                System.out.println("query #" + queryCounter++ + " eseguita correttamente");
+                System.out.println("query #" + queryCounter + " eseguita correttamente");
+                }
             }
-        }
-        catch(SQLException e) {
-            throw new SQLException("error occured during query execution:\n" + stmt.getWarnings() + "\n\"" + query + "\"\n");
-        }
+            catch(SQLException e) {
+                //throw new SQLException("error occured during query execution:\n" + stmt.getWarnings() + "\n\"" + query + "\"\n");
+                e.printStackTrace();
+            }
     }
 
     /**
