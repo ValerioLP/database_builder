@@ -21,7 +21,7 @@ public final class Int extends DataType
         StringBuilder out = new StringBuilder();
         Random r = new Random();
         for (int i = 0; i < decimals; i++)
-            out.append(r.nextInt(10));
+            out.append(r.nextInt(9) + 1);
         return out.toString();
     }
 }

@@ -6,6 +6,7 @@ import exceptions.ForeignKeyException;
 import utility.Coppia;
 import query.Insert;
 import query.Query;
+import utility.MyConsumer;
 
 import java.sql.*;
 import java.util.*;
@@ -89,21 +90,189 @@ public class Database {
     /**
      * Campi della classe:
      */
-    static final String DRIVERS = "com.mysql.cj.jdbc.Driver";
-    static final String CREATE = "create database if not exists ";
-    static final String USE = "use ";
-
-    private String name;
-    private String url;    
-    private String query;
+    private static final String DRIVERS = "com.mysql.cj.jdbc.Driver";
+    private static final String CREATE = "create database if not exists ";
+    private static final String USE = "use ";
 
     private int autoIncremental = 1;
     private int queryCounter = 1;
+    private int duplicateEntryCounter = 0;
+
+    private String name;
+    private String url;
+    private String query;
 
     Connection conn = null;
 
     private List<Table> tables = new ArrayList<>();
     private List<Trigger> triggers = new ArrayList<>();
+
+    /**
+     * campi con delle funzioni consumer che verranno utilizzati nei metodi di population
+     */
+    private final MyConsumer<Map<String, List<String>>, Set<String>, Table, Integer> GENERIC_CONSUMER = (valoriGenerati, attributiDaSalvare, t, n) ->
+    {
+        List<Attribute> attributes = t.getAttributes();
+
+        //per ogni inserimento da fare
+        for (int j = 0; j < n; j++)
+        {
+            //costruiamo la query di inserimento
+            Insert.QueryBuilder q = new Insert.QueryBuilder(t.getName());
+
+            //iteriamo su tutti gli attributi
+            for (Attribute a : attributes)
+            {
+                if (!a.getAutoIncremental()) //se l'attributo non è autoincremental
+                {
+                    if (t.getVincoli().stream().noneMatch(v -> v.getVincolato().equals(a.getName()))) //caso in cui devo generare un valore casuale
+                    {
+                        //creo un valore random sul dominio del tipo
+                        String randomValue = a.getType().randomize();
+
+                        //genero la chiave nel formato table.attribute
+                        String key = t.getName() + "." + a.getName();
+
+                        //se l'attributo è contenuto nell'insieme degli attributi è da salvare
+                        if (attributiDaSalvare.contains(key)) {
+                            //se la chiave è presente nella mappa allora aggiungo il valore all'insieme
+                            valoriGenerati.computeIfPresent(key, (k, v) -> {
+                                v.add(randomValue);
+                                return v;
+                            });
+
+                            //se la chiave non è presente nella mappa allora creo un insieme e ci aggiungo il valore
+                            valoriGenerati.computeIfAbsent(key, k ->
+                            {
+                                List<String> l = new LinkedList<>();
+                                l.add(randomValue);
+                                return l;
+                            });
+                        }
+                        q.addValue(a.getName(), randomValue);
+                    }
+                    else //caso in cui devo prendere il valore dai valori generati
+                    {
+                        Vincolo v = t.getVincoli().stream().
+                                filter(x -> x.getVincolato().equals(a.getName()))
+                                .reduce((x, y) -> x)
+                                .orElse(null);
+
+                        String key = v.getReferencedTable() + "." + v.getForeignKey();
+
+                        List<String> listaValori = valoriGenerati.get(key);
+                        String randomValue = listaValori.get(new Random().nextInt(listaValori.size()));
+
+                        //genero la chiave nel formato table.attribute
+                        key = t.getName() + "." + a.getName();
+
+                        //se l'attributo è contenuto nell'insieme degli attributi è da salvare
+                        if (attributiDaSalvare.contains(key)) {
+                            //se la chiave è presente nella mappa allora aggiungo il valore all'insieme
+                            valoriGenerati.computeIfPresent(key, (k, val) -> {
+                                val.add(randomValue);
+                                return val;
+                            });
+
+                            //se la chiave non è presente nella mappa allora creo un insieme e ci aggiungo il valore
+                            valoriGenerati.computeIfAbsent(key, k ->
+                            {
+                                List<String> l = new LinkedList<>();
+                                l.add(randomValue);
+                                return l;
+                            });
+                        }
+                        q.addValue(a.getName(), randomValue);
+                    }
+                }
+                else //l'attributo è autincremental
+                {
+                    String key = t.getName() + "." + a.getName();
+
+                    if (attributiDaSalvare.contains(key)) //l'attributo è chiave
+                    {
+                        //se la chiave è presente nella mappa allora aggiungo il valore all'insieme
+                        valoriGenerati.computeIfPresent(key, (k, v) -> {
+                            v.add(autoIncremental + "");
+                            return v;
+                        });
+
+                        //se la chiave non è presente nella mappa allora creo un insieme e ci aggiungo il valore
+                        valoriGenerati.computeIfAbsent(key, k ->
+                        {
+                            List<String> l = new LinkedList<>();
+                            l.add(autoIncremental + "");
+                            return l;
+                        });
+                        autoIncremental++;
+                    }
+                }
+            } //chiusura del for sugli attributi
+            executeQuery(q.build());
+        }//chiusura del for sugli inserimenti
+    };
+
+    private final MyConsumer<Map<String, List<String>>, Set<String>, Table, Integer> MISSION_CONSUMER = (valoriGenerati, attributiDaSalvare, t, n) ->
+    {
+        //per ogni inserimento da fare
+        for (int j = 0; j < n; j++)
+        {
+            //costruiamo la query di inserimento
+            Insert.QueryBuilder q = new Insert.QueryBuilder(t.getName());
+
+            Random r = new Random();
+
+            //inseriamo l'id missione
+            String key = t.getName() + ".id";
+            //se la chiave è presente nella mappa allora aggiungo il valore all'insieme
+            valoriGenerati.computeIfPresent(key, (k, v) -> {
+                v.add(autoIncremental + "");
+                return v;
+            });
+            //se la chiave non è presente nella mappa allora creo un insieme e ci aggiungo il valore
+            valoriGenerati.computeIfAbsent(key, k ->
+            {
+                List<String> l = new LinkedList<>();
+                l.add(autoIncremental + "");
+                return l;
+            });
+            autoIncremental++;
+
+            //inseriamo la regione
+            List<String> regioneGenerate = valoriGenerati.get("regione.nome");
+            q.addValue("regione", regioneGenerate.get(r.nextInt(regioneGenerate.size())));
+
+            //inseriamo il tipo di missione
+            String tipoMissione = t.getAttribute("tipo_missione").getType().randomize();
+            q.addValue("tipo_missione", tipoMissione);
+
+            if (tipoMissione.equals("assegnazione") || tipoMissione.equals("taglia")) //tipo assegnazione o taglia
+            {
+                //inseriamo tutti gli attributi
+                q.addValue("grado_richiesto", t.getAttribute("grado_richiesto").getType().randomize());
+
+                q.addValue("ricompensa", t.getAttribute("ricompensa").getType().randomize());
+
+                q.addValue("obiettivo", t.getAttribute("obiettivo").getType().randomize());
+
+                q.addValue("lv_difficolta", t.getAttribute("lv_difficolta").getType().randomize());
+
+                q.addValue("nome", t.getAttribute("nome").getType().randomize());
+
+                q.addValue("descrizione", t.getAttribute("descrizione").getType().randomize());
+
+                q.addValue("tempo_limite", t.getAttribute("tempo_limite").getType().randomize());
+
+                q.addValue("numero_vite", t.getAttribute("numero_vite").getType().randomize());
+
+                q.addValue("npc", t.getAttribute("npc").getType().randomize());
+
+                if (tipoMissione.equals("assegnazione")) //se è solo di tipo assegnazione
+                    q.addValue("tipo_assegnazione", t.getAttribute("tipo_assegnazione").getType().randomize());
+            }
+            executeQuery(q.build());
+        }//fine del for su gli inserimenti
+    };
 
     /**
      * costruttore della classe Database. Salva il nome del database, l'url del server mySQL
@@ -215,8 +384,7 @@ public class Database {
 
         //andiamo ad eseguire una per volta tutte le query salvate nell'array
         for (int i = 0; i < queries.length; i++) {
-            try { executeQuery(queries[i]); }
-            catch(SQLException e) { e.printStackTrace(); }
+            executeQuery(queries[i]);
 
         }
     }
@@ -226,7 +394,7 @@ public class Database {
      * @param query la query sottoforma di stringa
      * @throws SQLException
      */
-    private void executeQuery(String query) throws SQLException {
+    private void executeQuery(String query) {
         //prova a creare una connessione con mySQL per permettere l'utilizzo delle query
         Statement stmt = null;
             try {
@@ -290,8 +458,10 @@ public class Database {
                 }
             }
             catch(SQLException e) {
-                //throw new SQLException("error occured during query execution:\n" + stmt.getWarnings() + "\n\"" + query + "\"\n");
-                e.printStackTrace();
+                if (!e.getMessage().substring(0,9).equals("Duplicate"))
+                    e.printStackTrace();
+                else
+                    duplicateEntryCounter++;
             }
     }
 
@@ -299,6 +469,12 @@ public class Database {
      * popola il db con entry casuali
      */
     public void randomPopulate() { randomPopulate(1000); }
+
+    /**
+     * metodo che ritorna il numero di duplicate entry che non sono state inserite nel db
+     * @return numero di duplicate entry
+     */
+    public int getDuplicateEntryCounter() { return duplicateEntryCounter; }
 
     /**
      * popola il db con entry casuali
@@ -420,8 +596,6 @@ public class Database {
                                         });
                                     }
                                     q.addValue(a.getName(), randomValue);
-                                    
-                                    q.addValue(a.getName(), randomValue);
                                 }
                             }
                             else //l'attributo è autoincremental
@@ -447,14 +621,83 @@ public class Database {
                                 }
                             }
                         }); //chiusura del forEach
-                try { executeQuery(q.build()); }
-                catch (SQLException e)
-                {
-                    e.printStackTrace();
-                }
+                executeQuery(q.build());
             }
             autoIncremental = 1;
         }
+    }
+
+    public void randomPopulateMHW(int n)
+    {
+        //table del db mhw ordinati tramite sort topologico
+        String[] tableSort = new String[] {
+                "fauna_endemica",
+                "clima",
+                "npc",
+                "abilita",
+                "mostro",
+                "status",
+                "status_clima",
+                "status_mostro",
+                "elemento",
+                "elemento_mostro",
+                "resistenza",
+                "regione",
+                "locazione",
+                "clima_regione",
+                "missione",
+                "incontro",
+                "gioiello",
+                "ottenimento",
+                "crafting",
+                "ricetta",
+                "richiesta",
+                "ricavo",
+                "proiettile",
+                "rivestimento",
+                "equipaggiamento",
+                "creazione",
+                "abilita_equipaggiamento",
+                "armatura",
+                "arma",
+                "utilizzo_rivestimento",
+                "utilizzo_proiettile",
+                "set_equipaggiamento",
+                "gioiello_equipaggiato",
+                "armatura_equipaggiata",
+                "account",
+                "cacciatore",
+                "set_posseduto",
+                "missione_completata",
+                "possedimento_gioiello",
+                "possedimento_oggetto",
+                "possedimento_equipaggiamento"
+        };
+
+        //costruisco una mappa da table.attribute a valori generati per quell'attributo
+        Map<String, List<String>> valoriGenerati = new HashMap<>();
+
+        //creiamo la lista di attributi da salvare
+        Set<String> attributiDaSalvare = new HashSet<>();
+
+        //iteriamo sui table per creare l'insieme di attributi da salvare
+        for (int i = 0; i < tableSort.length; i++) {
+            Table t = getTable(tableSort[i]);
+            //inseriamo i vincoli tra gli attributi da salvare
+            t.getVincoli().stream().forEach(v -> attributiDaSalvare.add(v.getReferencedTable() + "." + v.getForeignKey()));
+        }
+
+        //iteriamo su tutti i table
+        for (int i = 0; i < tableSort.length; i++)
+        {
+            Table t = getTable(tableSort[i]);
+            if (t.getName().equals("missione"))
+                MISSION_CONSUMER.accept(valoriGenerati, attributiDaSalvare, t, n);
+            else
+                GENERIC_CONSUMER.accept(valoriGenerati, attributiDaSalvare, t, n);
+
+            autoIncremental = 1;
+        }//chiusura del for sui table
     }
 
     /**
@@ -503,26 +746,7 @@ public class Database {
      * oppure se ci sono attibuti obbligatori non inseriti
      * @throws SQLException se la query non viene eseguita correttamente
      */
-    public void executeQuery(Query query) throws SQLException
-    {
-/*
-        Table t = getTable("x")
-
-        //controlliamo che la tabella e gli attributi passati in input sono presenti nel db
-        if (t == null) { throw new IllegalArgumentException("la tabella inserita non è presente nel db"); }
-        if (!attributes.keySet()
-                .stream()
-                .allMatch(x -> t.getAttribute(x) == null ?  false : t.getAttribute(x).getName().equals(x)))
-            throw new IllegalArgumentException("uno o piu degli attributi inseriti non è presente nel table");
-        if (!t.getAttributes()
-                .stream()
-                .filter(x -> x.isNotNull())
-                .filter(x -> !x.getAutoIncremental())
-                .allMatch(x -> attributes.keySet().contains(x.getName())))
-            throw new IllegalArgumentException("uno o piu attributi obbligatori non sono stati inseriti nella lista");
- */
-        executeQuery(query.toString());
-    }
+    public void executeQuery(Query query) {  executeQuery(query.toString()); }
 
     @Override
     public String toString() { return name + " " + url; }
