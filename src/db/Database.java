@@ -124,89 +124,9 @@ public class Database {
             for (Attribute a : attributes)
             {
                 if (!a.getAutoIncremental()) //se l'attributo non è autoincremental
-                {
-                    if (t.getVincoli().stream().noneMatch(v -> v.getVincolato().equals(a.getName()))) //caso in cui devo generare un valore casuale
-                    {
-                        //creo un valore random sul dominio del tipo
-                        String randomValue = a.getType().randomize();
-
-                        //genero la chiave nel formato table.attribute
-                        String key = t.getName() + "." + a.getName();
-
-                        //se l'attributo è contenuto nell'insieme degli attributi è da salvare
-                        if (attributiDaSalvare.contains(key)) {
-                            //se la chiave è presente nella mappa allora aggiungo il valore all'insieme
-                            valoriGenerati.computeIfPresent(key, (k, v) -> {
-                                v.add(randomValue);
-                                return v;
-                            });
-
-                            //se la chiave non è presente nella mappa allora creo un insieme e ci aggiungo il valore
-                            valoriGenerati.computeIfAbsent(key, k ->
-                            {
-                                List<String> l = new LinkedList<>();
-                                l.add(randomValue);
-                                return l;
-                            });
-                        }
-                        q.addValue(a.getName(), randomValue);
-                    }
-                    else //caso in cui devo prendere il valore dai valori generati
-                    {
-                        Vincolo v = t.getVincoli().stream().
-                                filter(x -> x.getVincolato().equals(a.getName()))
-                                .reduce((x, y) -> x)
-                                .orElse(null);
-
-                        String key = v.getReferencedTable() + "." + v.getForeignKey();
-
-                        List<String> listaValori = valoriGenerati.get(key);
-                        String randomValue = listaValori.get(new Random().nextInt(listaValori.size()));
-
-                        //genero la chiave nel formato table.attribute
-                        key = t.getName() + "." + a.getName();
-
-                        //se l'attributo è contenuto nell'insieme degli attributi è da salvare
-                        if (attributiDaSalvare.contains(key)) {
-                            //se la chiave è presente nella mappa allora aggiungo il valore all'insieme
-                            valoriGenerati.computeIfPresent(key, (k, val) -> {
-                                val.add(randomValue);
-                                return val;
-                            });
-
-                            //se la chiave non è presente nella mappa allora creo un insieme e ci aggiungo il valore
-                            valoriGenerati.computeIfAbsent(key, k ->
-                            {
-                                List<String> l = new LinkedList<>();
-                                l.add(randomValue);
-                                return l;
-                            });
-                        }
-                        q.addValue(a.getName(), randomValue);
-                    }
-                }
-                else //l'attributo è autincremental
-                {
-                    String key = t.getName() + "." + a.getName();
-
-                    if (attributiDaSalvare.contains(key)) //l'attributo è chiave
-                    {
-                        //se la chiave è presente nella mappa allora aggiungo il valore all'insieme
-                        valoriGenerati.computeIfPresent(key, (k, v) -> {
-                            v.add(autoIncremental + "");
-                            return v;
-                        });
-
-                        //se la chiave non è presente nella mappa allora creo un insieme e ci aggiungo il valore
-                        valoriGenerati.computeIfAbsent(key, k ->
-                        {
-                            List<String> l = new LinkedList<>();
-                            l.add(autoIncremental + "");
-                            return l;
-                        });
-                        autoIncremental++;
-                    }
-                }
+                    notAutoIncrementalCase(t, attributiDaSalvare, valoriGenerati, q, a);
+                else //l'attributo è autoincremental
+                    autoIncrementalCase(t, attributiDaSalvare, valoriGenerati, a);
             } //chiusura del for sugli attributi
             executeQuery(q.build());
         }//chiusura del for sugli inserimenti
@@ -844,6 +764,94 @@ public class Database {
      * @throws SQLException se la query non viene eseguita correttamente
      */
     public void executeQuery(Query query) {  executeQuery(query.toString()); }
+
+    /**
+     * Metodo per il caso in cui devo prendere il valore dai valori generati
+     */
+    private void getRandomValueGenerated(Table t, Set<String> attributiDaSalvare, Map<String, List<String>> valoriGenerati, Insert.QueryBuilder q, Attribute a)
+    {
+        Vincolo v = t.getVincoli().stream()
+                .filter(x -> x.getVincolato().equals(a.getName()))
+                .reduce((x, y) -> x)
+                .orElse(null);
+
+        String key = v.getReferencedTable() + "." + v.getForeignKey();
+
+        List<String> listaValori = valoriGenerati.get(key);
+        String randomValue = listaValori.get(new Random().nextInt(listaValori.size()));
+
+        //genero la chiave nel formato table.attribute
+        key = t.getName() + "." + a.getName();
+
+        //se l'attributo è contenuto nell'insieme degli attributi è da salvare
+        if (attributiDaSalvare.contains(key))
+            checkAttribute(attributiDaSalvare, valoriGenerati, key, randomValue);
+        q.addValue(a.getName(), randomValue);
+    }
+
+    /**
+     * se l'attributo è contenuto nell'insieme degli attributi è da salvare
+     */
+    private void checkAttribute(Set<String> attributiDaSalvare, Map<String, List<String>> valoriGenerati, String key, String randomValue)
+    {
+        //se la chiave è presente nella mappa allora aggiungo il valore all'insieme
+        valoriGenerati.computeIfPresent(key, (k, val) ->
+        {
+            val.add(randomValue);
+            return val;
+        });
+
+        //se la chiave non è presente nella mappa allora creo un insieme e ci aggiungo il valore
+        valoriGenerati.computeIfAbsent(key, k ->
+        {
+            List<String> l = new LinkedList<>();
+            l.add(randomValue);
+            return l;
+        });
+    }
+
+    /**
+     * Metodo per il caso in cui l'attributo non è autoincremental
+     */
+    private void notAutoIncrementalCase(Table t, Set<String> attributiDaSalvare, Map<String, List<String>> valoriGenerati, Insert.QueryBuilder q, Attribute a)
+    {
+        //caso in cui devo generare un valore casuale
+        if (t.getVincoli().stream().noneMatch(v -> v.getVincolato().equals(a.getName())))
+            randomValueGenerate(t, attributiDaSalvare, valoriGenerati, q, a);
+        else //caso in cui devo prendere il valore dai valori generati
+            getRandomValueGenerated(t, attributiDaSalvare, valoriGenerati, q, a);
+    }
+
+    /**
+     * Metodo per il caso in cui l'attributo è autoincremental
+     */
+    private void autoIncrementalCase(Table t, Set<String> attributiDaSalvare, Map<String, List<String>> valoriGenerati, Attribute a)
+    {
+        String key = t.getName() + "." + a.getName();
+        //se l'attributo è contenuto nell'insieme degli attributi è da salvare
+        if (attributiDaSalvare.contains(key))
+        {
+            checkAttribute(attributiDaSalvare, valoriGenerati, key, "" + autoIncremental);
+            autoIncremental++;
+        }
+    }
+
+    /**
+     * Metodo per il caso in cui devo generare un valore casuale
+     */
+    private void randomValueGenerate(Table t, Set<String> attributiDaSalvare, Map<String, List<String>> valoriGenerati, Insert.QueryBuilder q, Attribute a)
+    {
+        //creo un valore random sul dominio del tipo
+        String randomValue = a.getType().randomize();
+
+        //genero la chiave nel formato table.attribute
+        String key = t.getName() + "." + a.getName();
+
+        //se l'attributo è contenuto nell'insieme degli attributi è da salvare
+        if (attributiDaSalvare.contains(key))
+            checkAttribute(attributiDaSalvare, valoriGenerati, key, randomValue);
+        q.addValue(a.getName(), randomValue);
+    }
 
     @Override
     public String toString() { return name + " " + url; }
