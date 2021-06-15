@@ -239,8 +239,8 @@ public class Database {
             autoIncremental++;
 
             //inseriamo la regione
-            List<String> regioneGenerate = valoriGenerati.get("regione.nome");
-            q.addValue("regione", regioneGenerate.get(r.nextInt(regioneGenerate.size())));
+            List<String> regioniGenerate = valoriGenerati.get("regione.nome");
+            q.addValue("regione", regioniGenerate.get(r.nextInt(regioniGenerate.size())));
 
             //inseriamo il tipo di missione
             String tipoMissione = t.getAttribute("tipo_missione").getType().randomize();
@@ -270,6 +270,101 @@ public class Database {
                 if (tipoMissione.equals("assegnazione")) //se è solo di tipo assegnazione
                     q.addValue("tipo_assegnazione", t.getAttribute("tipo_assegnazione").getType().randomize());
             }
+            executeQuery(q.build());
+        }//fine del for su gli inserimenti
+    };
+
+    private final MyConsumer<Map<String, List<String>>, Set<String>, Table, Integer> WEAPON_CONSUMER = (valoriGenerati, attributiDaSalvare, t, n) ->
+    {
+        //per ogni inserimento da fare
+        for (int j = 0; j < n; j++)
+        {
+            //costruiamo la query di inserimento
+            Insert.QueryBuilder q = new Insert.QueryBuilder(t.getName());
+
+            //OBBLIGATORI nome, tipo, attacco, affinita
+            //OPZIONALI
+
+            Random r = new Random();
+
+            //prendiamo il nome da equipaggiamento e lo salviamo tra i valori salvati
+            Set<String> equipaggiamentiGeneratiSet = new HashSet<>(valoriGenerati.get("equipaggiamento.nome"));
+            equipaggiamentiGeneratiSet.removeAll(valoriGenerati.get("armatura.nome"));
+            List<String> equipaggiamentiGenerati = new ArrayList<>(equipaggiamentiGeneratiSet);
+
+            String equipaggiamento = equipaggiamentiGenerati.get(r.nextInt(equipaggiamentiGenerati.size()));
+            String key = t.getName() + ".nome";
+            //se la chiave è presente nella mappa allora aggiungo il valore all'insieme
+            valoriGenerati.computeIfPresent(key, (k, v) -> {
+                v.add(equipaggiamento);
+                return v;
+            });
+            //se la chiave non è presente nella mappa allora creo un insieme e ci aggiungo il valore
+            valoriGenerati.computeIfAbsent(key, k ->
+            {
+                List<String> l = new LinkedList<>();
+                l.add(equipaggiamento);
+                return l;
+            });
+
+            //randomizzo e inserisco nel db i valori obbligatori
+            q.addValue("nome", equipaggiamento);
+            q.addValue("attacco", t.getAttribute("attacco").getType().randomize());
+            q.addValue("affinita", t.getAttribute("affinita").getType().randomize());
+
+
+            //randomizzo se l'arma ha o meno una difesa
+            int randomInt = r.nextInt(100);
+            if (randomInt < 50) //ha una difesa
+                q.addValue("difesa", t.getAttribute("difesa").getType().randomize());
+
+            //randomizzo l'arma e in base al tipo aggiungi i valori opzionali necessari
+            String weaponType = t.getAttribute("tipo").getType().randomize();
+
+            if (!weaponType.equals("arco") && !weaponType.substring(0,4).equals("bale")) //se è un'arma da taglio avrà un'acutezza
+            {
+                q.addValue("acutezza",  t.getAttribute("acutezza").getType().randomize());
+
+                if (weaponType.equals("lancia fucile")) // è una lancia fucile
+                {
+                    q.addValue("tipo_proiettile", t.getAttribute("tipo_proiettile").getType().randomize());
+                    q.addValue("lv_proiettile", t.getAttribute("lv_proiettile").getType().randomize());
+                }
+                else if (weaponType.equals("spadascia") || weaponType.equals("lama caricata"))
+                    q.addValue("tipo_fiala", t.getAttribute("tipo_fiala").getType().randomize());
+            }
+            else if (!weaponType.equals("arco"))//è una balestra
+            {
+                q.addValue("rinculo", t.getAttribute("rinculo").getType().randomize());
+                if (weaponType.equals("balestra pesante")) //è una balestra pesante
+                    q.addValue("proiettile_speciale", t.getAttribute("proiettile_speciale").getType().randomize());
+            }
+
+            if (!weaponType.substring(0,4).equals("bale"))
+            {
+                //randomizzo uno tra elemento/status/nessuno dei due
+                randomInt = r.nextInt(100);
+                if (randomInt < 33) //ha elemento
+                {
+                    //prendo un elemento casuale tra quelli gia inseriti
+                    List<String> elementiGenerati = valoriGenerati.get("elemento.nome");
+                    String elemento = elementiGenerati.get(r.nextInt(elementiGenerati.size()));
+
+                    q.addValue("elemento", elemento);
+                    q.addValue("attacco_elementale", t.getAttribute("attacco_elementale").getType().randomize());
+                }
+                else if (randomInt < 66) //ha status
+                {
+                    //prendo uno status casuale tra quelli gia inseriti
+                    List<String> statusGenerati = valoriGenerati.get("status.nome");
+                    String status = statusGenerati.get(r.nextInt(statusGenerati.size()));
+
+                    q.addValue("status", status);
+                    q.addValue("attacco_status", t.getAttribute("attacco_status").getType().randomize());
+                }
+            }
+
+            q.addValue("tipo", weaponType);
             executeQuery(q.build());
         }//fine del for su gli inserimenti
     };
@@ -693,6 +788,8 @@ public class Database {
             Table t = getTable(tableSort[i]);
             if (t.getName().equals("missione"))
                 MISSION_CONSUMER.accept(valoriGenerati, attributiDaSalvare, t, n);
+            else if (t.getName().equals("arma"))
+                WEAPON_CONSUMER.accept(valoriGenerati, attributiDaSalvare, t, n);
             else
                 GENERIC_CONSUMER.accept(valoriGenerati, attributiDaSalvare, t, n);
 
