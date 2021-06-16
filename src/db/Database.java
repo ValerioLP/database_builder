@@ -3,11 +3,13 @@ package db;
 import data.Account;
 import exceptions.DriverNotFoundException;
 import exceptions.ForeignKeyException;
+import query.Select;
 import utility.Coppia;
 import query.Insert;
 import query.Query;
 import utility.MyConsumer;
 
+import javax.xml.transform.Result;
 import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -214,9 +216,6 @@ public class Database {
             //costruiamo la query di inserimento
             Insert.QueryBuilder q = new Insert.QueryBuilder(t.getName());
 
-            //OBBLIGATORI nome, tipo, attacco, affinita
-            //OPZIONALI
-
             Random r = new Random();
 
             //prendiamo il nome da equipaggiamento e lo salviamo tra i valori salvati
@@ -229,14 +228,12 @@ public class Database {
             
             String key = t.getName() + ".nome";
             
-            checkAttribute(valoriGenerati, key, equipaggiamento);
-
+            computeMap(valoriGenerati, key, equipaggiamento);
 
             //randomizzo e inserisco nel db i valori obbligatori
             q.addValue("nome", equipaggiamento);
             q.addValue("attacco", t.getAttribute("attacco").getType().randomize());
             q.addValue("affinita", t.getAttribute("affinita").getType().randomize());
-
 
             //randomizzo se l'arma ha o meno una difesa
             int randomInt = r.nextInt(100);
@@ -327,7 +324,7 @@ public class Database {
         	//aggiungo l'oggetto alla ricetta
         	if(occorrenze.containsKey(ricetta)) 
         	{
-        		if(!occorrenze.get(ricetta).contains(oggetto)) 
+        		if(!occorrenze.get(ricetta).contains(oggetto))
         		{        			
         			occorrenze.get(ricetta).add(oggetto); 
         		}
@@ -350,6 +347,148 @@ public class Database {
             else
             	System.out.println("Questa query ha tentato di inserire l'oggetto " + oggetto + " nella ricetta " + ricetta + " che possiede gia 2 occorrenze");
         }//fine del for sugli inserimenti
+    };
+
+    /**
+     * Consumer sulla tabella rivestimento
+     */
+    private final MyConsumer<Map<String, List<String>>, Set<String>, Table, Integer> RIVESTIMENTO_CONSUMER = (valoriGenerati, attributiDaSalvare, t, n) ->
+    {
+        //per ogni inserimento da fare
+        for (int j = 0; j < n; j++)
+        {
+            //creo la lista degli status gia inseriti
+            List<String> statusGenerati = valoriGenerati.get("status.nome");
+            //creo la lista degli oggetti generati
+            Set<String> oggettiGeneratiSet = new HashSet<>(valoriGenerati.get("crafting.nome"));
+            oggettiGeneratiSet.removeAll(valoriGenerati.get("proiettile.nome"));
+
+            List<String> oggettiGenerati = new ArrayList<>(oggettiGeneratiSet);
+
+            //costruiamo la query di inserimento
+            Insert.QueryBuilder q = new Insert.QueryBuilder(t.getName());
+
+            Random r = new Random();
+
+            String name = oggettiGenerati.get(r.nextInt(oggettiGenerati.size()));
+
+            computeMap(valoriGenerati, t.getName() + ".nome", name);
+
+            q.addValue("nome", name);
+            q.addValue("status", statusGenerati.get(r.nextInt(statusGenerati.size())));
+
+            executeQuery(q.build());
+        }//fine del for sugli inserimenti
+    };
+
+
+    /**
+     * consumer sulle tabelle possedimento
+     */
+    private final MyConsumer<Map<String, List<String>>, Set<String>, Table, Integer> POSSEDIMENTO_CONSUMER = (valoriGenerati, attributiDaSalvare, t, n) ->
+    {
+        //inizializziamo la lista degli account
+        List<String> listaAccount = new ArrayList<>();
+
+        //creiamo uno statement e lo connettiamo al db
+        Statement stmt = null;
+        try { stmt = conn.createStatement(); }
+        catch (SQLException e) {}
+
+        try //prendiamo tutti gli account con almeno un cacciatore dal db
+        {
+            ResultSet out = stmt.executeQuery("select distinct account from cacciatore;");
+
+            while(out.next())
+                listaAccount.add(out.getString(1));
+        }
+        catch (SQLException e) { System.out.println("ERRORE DURANTE LA QUERY"); }
+
+        List<Attribute> attributes = t.getAttributes();
+
+        Random r = new Random();
+
+        //per ogni inserimento da fare
+        for (int j = 0; j < n; j++)
+        {
+            //costruiamo la query di inserimento
+            Insert.QueryBuilder q = new Insert.QueryBuilder(t.getName());
+
+            String account = listaAccount.get(r.nextInt(listaAccount.size()));
+
+            //iteriamo su tutti gli attributi
+            for (Attribute a : attributes)
+            {
+                if (a.getName().equals("cacciatore"))
+                {
+                    //facciamo una query di select per prendere i cacciatori appartenenti a quell'account
+
+                    try
+                    {
+                        ResultSet out = stmt.executeQuery("select nome from cacciatore where account = \"" + account + "\"");
+
+                        //ci salviamo l'output della query nella lista
+                        List<String> nomiAccount = new ArrayList<>(3);
+
+                        while(out.next())
+                            nomiAccount.add(out.getString(1));
+
+                        q.addValue("cacciatore", nomiAccount.get(r.nextInt(nomiAccount.size())));
+                    }
+                    catch (SQLException e) {}
+
+                }
+                if (a.getName().equals("account"))
+                    q.addValue("account", account);
+
+                if (!a.getName().equals("cacciatore") && !a.getName().equals("account")) //se l'attributo non è account o cacciatore
+                    notAutoIncrementalCase(t, attributiDaSalvare, valoriGenerati, q, a);
+
+            } //chiusura del for sugli attributi
+            executeQuery(q.build());
+        }//chiusura del for sugli inserimenti
+    };
+
+    /**
+     * consumer sulla tabella cacciatore
+     */
+    private final MyConsumer<Map<String, List<String>>, Set<String>, Table, Integer> HUNTER_CONSUMER = (valoriGenerati, attributiDaSalvare, t, n) ->
+    {
+        //mappa che abina ad ogni account la lista dei suoi cacciatori
+        Map<String, List<String>> accountCacciatori = new HashMap<>();
+
+        List<String> listaAccount = valoriGenerati.get("account.id");
+
+        listaAccount.forEach(a -> accountCacciatori.put(a, new ArrayList<>()));
+
+        Random r = new Random();
+
+        for (int j = 0; j < n; j++)
+        {
+            //costruiamo la query di inserimento
+            Insert.QueryBuilder q = new Insert.QueryBuilder(t.getName());
+
+            String account;
+
+            do
+                account = listaAccount.get(r.nextInt(valoriGenerati.size()));
+            while (accountCacciatori.get(account).size() == 3);
+
+            //genero un nome lo aggiungo alla query e ai valori generati
+
+            String nome = t.getAttribute("nome").getType().randomize();
+            computeMap(valoriGenerati, t.getName() + ".nome", nome);
+
+            computeMap(accountCacciatori, account, nome);
+
+            //inserico account e valori generati casualmente
+            q.addValue("account", account);
+            q.addValue("nome", nome);
+            q.addValue("zenny", t.getAttribute("zenny").getType().randomize());
+            q.addValue("grado", t.getAttribute("grado").getType().randomize());
+
+            executeQuery(q.build());
+        } //fine del for sugli inserimenti
     };
 
     //-------------------------------------------------------CORPO DELLA CLASSE-----------------------------------------------------------------------//
@@ -477,13 +616,15 @@ public class Database {
     private void executeQuery(String query) {
         //prova a creare una connessione con mySQL per permettere l'utilizzo delle query
         Statement stmt = null;
-            try {
-                stmt = conn.createStatement();
-                System.out.println(query);
+        try
+        {
+            stmt = conn.createStatement();
+            System.out.println(query);
 
-                queryCounter++;
+            queryCounter++;
 
-                if (query.substring(0,6).equals("select")) {
+            if (query.substring(0,6).equals("select"))
+            {
                 ResultSet out = stmt.executeQuery(query);
                 System.out.println("query #" + queryCounter + " eseguita correttamente");
 
@@ -497,6 +638,7 @@ public class Database {
                 int[] max_length = new int[columnCount];
 
                 //per ogni colonna costruiamo la prima riga della query
+
                 for (int i = 1; i <= columnCount  ; i++) {
 
                     int columnSize = metaData.getColumnDisplaySize(i);
@@ -508,6 +650,7 @@ public class Database {
                 String primaRiga = queryOutput.substring(0,queryOutput.length()-1);
 
                 //per ogni colonna costruiamo la seconda riga della query
+
                 for (int i = 1; i <= columnCount  ; i++) {
                     String column_name = metaData.getColumnName(i);
                     queryOutput.append(" " + column_name + " ".repeat(max_length[i-1] - column_name.length()) + " |");
@@ -522,7 +665,7 @@ public class Database {
                     queryOutput.append("| ");
                     for (int i = 1; i <= columnCount  ; i++) {
                         String result = out.getString(i);
-                            queryOutput.append(result + " ".repeat(max_length[i-1] - (result == null ? 4 : result.length())) + " | ");
+                        queryOutput.append(result + " ".repeat(max_length[i-1] - (result == null ? 4 : result.length())) + " | ");
                     }
                     queryOutput.append("\n");
                 }
@@ -531,18 +674,18 @@ public class Database {
                     queryOutput.append(primaRiga.substring(0, primaRiga.length()-1));
 
                 System.out.println(queryOutput.toString());
-                }
-                else {
+            }
+            else {
                 stmt.execute(query);
                 System.out.println("query #" + queryCounter + " eseguita correttamente");
-                }
             }
-            catch(SQLException e) {
-                if (!e.getMessage().substring(0,9).equals("Duplicate"))
-                    e.printStackTrace();
-                else
-                    duplicateEntryCounter++;
-            }
+        }
+        catch(SQLException e) {
+            if (!e.getMessage().substring(0,9).equals("Duplicate"))
+                e.printStackTrace();
+            else
+                duplicateEntryCounter++;
+        }
     }
     
     /**
@@ -635,12 +778,17 @@ public class Database {
                 WEAPON_CONSUMER.accept(valoriGenerati, attributiDaSalvare, t, n);
             else if (t.getName().equals("richiesta"))
                 RICHIESTA_CONSUMER.accept(valoriGenerati, attributiDaSalvare, t, n);
+            else if (t.getName().equals("rivestimento"))
+                RIVESTIMENTO_CONSUMER.accept(valoriGenerati, attributiDaSalvare, t, n);
+            else if (t.getName().equals("cacciatore"))
+                HUNTER_CONSUMER.accept(valoriGenerati, attributiDaSalvare, t, n);
+            else if (t.getName().substring(0,3).equals("pos") || t.getName().equals("set_posseduto") || t.getName().equals("missione_completata"))
+                POSSEDIMENTO_CONSUMER.accept(valoriGenerati, attributiDaSalvare, t, n);
             else
                 GENERIC_CONSUMER.accept(valoriGenerati, attributiDaSalvare, t, n);
 
             autoIncremental = 1;
         }//chiusura del for sui table
-        System.out.println(valoriGenerati);
     }
 
     
@@ -765,7 +913,7 @@ public class Database {
     /**
      * se l'attributo è contenuto nell'insieme degli attributi è da salvare
      */
-    private void checkAttribute(Map<String, List<String>> valoriGenerati, String key, String randomValue)
+    private void computeMap(Map<String, List<String>> valoriGenerati, String key, String randomValue)
     {
         //se la chiave è presente nella mappa allora aggiungo il valore all'insieme
         valoriGenerati.computeIfPresent(key, (k, val) ->
@@ -796,7 +944,7 @@ public class Database {
 
         //se l'attributo è contenuto nell'insieme degli attributi da salvare è quindi da salvare
         if (attributiDaSalvare.contains(key))
-            checkAttribute(valoriGenerati, key, randomValue);
+            computeMap(valoriGenerati, key, randomValue);
         q.addValue(a.getName(), randomValue);
     }
     
@@ -820,7 +968,7 @@ public class Database {
 
         //se l'attributo è contenuto nell'insieme degli attributi è da salvare
         if (attributiDaSalvare.contains(key))
-            checkAttribute(valoriGenerati, key, randomValue);
+            computeMap(valoriGenerati, key, randomValue);
         q.addValue(a.getName(), randomValue);
     }
 
@@ -833,7 +981,7 @@ public class Database {
         //se l'attributo è contenuto nell'insieme degli attributi è da salvare
         if (attributiDaSalvare.contains(key))
         {
-            checkAttribute(valoriGenerati, key, "" + autoIncremental);
+            computeMap(valoriGenerati, key, "" + autoIncremental);
             autoIncremental++;
         }
     }
