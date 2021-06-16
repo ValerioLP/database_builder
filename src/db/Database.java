@@ -221,23 +221,16 @@ public class Database {
 
             //prendiamo il nome da equipaggiamento e lo salviamo tra i valori salvati
             Set<String> equipaggiamentiGeneratiSet = new HashSet<>(valoriGenerati.get("equipaggiamento.nome"));
-            equipaggiamentiGeneratiSet.removeAll(valoriGenerati.get("armatura.nome"));
-            List<String> equipaggiamentiGenerati = new ArrayList<>(equipaggiamentiGeneratiSet);
-
+            equipaggiamentiGeneratiSet.removeAll(valoriGenerati.get("armatura.nome"));  
+            //creo la lista degli equipaggiamenti gia esistenti nel database diversi da armature gia create
+            List<String> equipaggiamentiGenerati = new ArrayList<>(equipaggiamentiGeneratiSet);          
+            //prendo un equipaggiamento random dalla lista degli equipaggiamenti gia esistenti
             String equipaggiamento = equipaggiamentiGenerati.get(r.nextInt(equipaggiamentiGenerati.size()));
+            
             String key = t.getName() + ".nome";
-            //se la chiave è presente nella mappa allora aggiungo il valore all'insieme
-            valoriGenerati.computeIfPresent(key, (k, v) -> {
-                v.add(equipaggiamento);
-                return v;
-            });
-            //se la chiave non è presente nella mappa allora creo un insieme e ci aggiungo il valore
-            valoriGenerati.computeIfAbsent(key, k ->
-            {
-                List<String> l = new LinkedList<>();
-                l.add(equipaggiamento);
-                return l;
-            });
+            
+            checkAttribute(valoriGenerati, key, equipaggiamento);
+
 
             //randomizzo e inserisco nel db i valori obbligatori
             q.addValue("nome", equipaggiamento);
@@ -298,7 +291,65 @@ public class Database {
 
             q.addValue("tipo", weaponType);
             executeQuery(q.build());
-        }//fine del for su gli inserimenti
+        }//fine del for sugli inserimenti
+    };
+    
+    /**
+     * Consumer sulla tabella richiesta
+     */
+    private final MyConsumer<Map<String, List<String>>, Set<String>, Table, Integer> RICHIESTA_CONSUMER = (valoriGenerati, attributiDaSalvare, t, n) ->
+    {
+    	//creo la lista delle ricette gia esistenti nel database
+        List<String> ricetteGenerate = valoriGenerati.get("ricetta.id");
+        //creo la lista degli oggetti gia esistenti
+        List<String> oggettiGenerati = valoriGenerati.get("crafting.nome");
+        //creo una mappa occorrenze
+        Map<String, List<String>> occorrenze = new HashMap<>();
+        
+        //per ogni inserimento da fare
+        for (int j = 0; j < n; j++)
+        {
+            //costruiamo la query di inserimento
+            Insert.QueryBuilder q = new Insert.QueryBuilder(t.getName());
+            
+            /**
+             * Prendo una ricetta gia esistente
+             */
+            //prendo una ricetta random dalla lista delle ricette gia esistenti
+        	String ricetta = ricetteGenerate.get(new Random().nextInt(ricetteGenerate.size()));
+        	
+            /**
+             * Prendo un oggetto_richiesto gia esistente
+             */
+            //prendo un oggetto random dalla lista degli oggetti gia esistenti
+        	String oggetto = oggettiGenerati.get(new Random().nextInt(oggettiGenerati.size()));
+
+        	//aggiungo l'oggetto alla ricetta
+        	if(occorrenze.containsKey(ricetta)) 
+        	{
+        		if(!occorrenze.get(ricetta).contains(oggetto)) 
+        		{        			
+        			occorrenze.get(ricetta).add(oggetto); 
+        		}
+        		else
+        			System.out.println("Questa query ha tentato di inserire nuovamente l'oggetto " + oggetto + " nella ricetta " + ricetta);
+        	}
+        	else 
+        	{
+        		List<String> oggetti = new ArrayList<>();
+        		oggetti.add(oggetto);
+        		occorrenze.put(ricetta, oggetti);
+        	}            
+            //se la ricetta ha meno di 2 oggetti da creazione richiesti posso inserire
+            if(occorrenze.get(ricetta).size() < 3) 
+            {
+            	q.addValue("ricetta", ricetta);
+            	q.addValue("oggetto_richiesto", oggetto); 
+            	executeQuery(q.build());
+            }
+            else
+            	System.out.println("Questa query ha tentato di inserire l'oggetto " + oggetto + " nella ricetta " + ricetta + " che possiede gia 2 occorrenze");
+        }//fine del for sugli inserimenti
     };
 
     //-------------------------------------------------------CORPO DELLA CLASSE-----------------------------------------------------------------------//
@@ -582,11 +633,14 @@ public class Database {
                 MISSION_CONSUMER.accept(valoriGenerati, attributiDaSalvare, t, n);
             else if (t.getName().equals("arma"))
                 WEAPON_CONSUMER.accept(valoriGenerati, attributiDaSalvare, t, n);
+            else if (t.getName().equals("richiesta"))
+                RICHIESTA_CONSUMER.accept(valoriGenerati, attributiDaSalvare, t, n);
             else
                 GENERIC_CONSUMER.accept(valoriGenerati, attributiDaSalvare, t, n);
 
             autoIncremental = 1;
         }//chiusura del for sui table
+        System.out.println(valoriGenerati);
     }
 
     
@@ -711,7 +765,7 @@ public class Database {
     /**
      * se l'attributo è contenuto nell'insieme degli attributi è da salvare
      */
-    private void checkAttribute(Set<String> attributiDaSalvare, Map<String, List<String>> valoriGenerati, String key, String randomValue)
+    private void checkAttribute(Map<String, List<String>> valoriGenerati, String key, String randomValue)
     {
         //se la chiave è presente nella mappa allora aggiungo il valore all'insieme
         valoriGenerati.computeIfPresent(key, (k, val) ->
@@ -740,9 +794,9 @@ public class Database {
         //genero la chiave nel formato table.attribute
         String key = t.getName() + "." + a.getName();
 
-        //se l'attributo è contenuto nell'insieme degli attributi è da salvare
+        //se l'attributo è contenuto nell'insieme degli attributi da salvare è quindi da salvare
         if (attributiDaSalvare.contains(key))
-            checkAttribute(attributiDaSalvare, valoriGenerati, key, randomValue);
+            checkAttribute(valoriGenerati, key, randomValue);
         q.addValue(a.getName(), randomValue);
     }
     
@@ -766,7 +820,7 @@ public class Database {
 
         //se l'attributo è contenuto nell'insieme degli attributi è da salvare
         if (attributiDaSalvare.contains(key))
-            checkAttribute(attributiDaSalvare, valoriGenerati, key, randomValue);
+            checkAttribute(valoriGenerati, key, randomValue);
         q.addValue(a.getName(), randomValue);
     }
 
@@ -779,7 +833,7 @@ public class Database {
         //se l'attributo è contenuto nell'insieme degli attributi è da salvare
         if (attributiDaSalvare.contains(key))
         {
-            checkAttribute(attributiDaSalvare, valoriGenerati, key, "" + autoIncremental);
+            checkAttribute(valoriGenerati, key, "" + autoIncremental);
             autoIncremental++;
         }
     }
