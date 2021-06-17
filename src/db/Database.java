@@ -414,6 +414,7 @@ public class Database {
 
             Random r = new Random();
 
+            //stiamo attenti a controllare se sono state inserite o meno archi
             if(listaArchi.size() > 0) {
 	            String arco = listaArchi.get(r.nextInt(listaArchi.size()));	            
 	            String rivestimento = rivestimentiGenerati.get(r.nextInt(rivestimentiGenerati.size()));   
@@ -426,7 +427,7 @@ public class Database {
 	        		rivestimentiMap.put(arco, rivestimentiList);
 	            }	
 	            //buildo la query solo se l'arco selezionato ha meno di 4 rivestimenti gia equipaggiati
-	            if(rivestimentiMap.get(arco).size() < 4) {
+	            if(rivestimentiMap.get(arco).size() < 5) {
 	            	//buildo la query
 		            q.addValue("arma", arco);
 		            q.addValue("rivestimento", rivestimento);
@@ -438,8 +439,68 @@ public class Database {
             	System.out.println("Non ci sono archi nella lista delle armi a cui poter inserire rivestimenti");
             	break;
             }
-        }//fine del for sugli inserimenti
+        }//fine del for sugli inserimenti        
+    };
+    
+    /**
+     * Consumer sulla tabella utilizzo_rivestimento
+     */
+    private final MyConsumer<Map<String, List<String>>, Set<String>, Table, Integer> UTILIZZO_PROIETTILE_CONSUMER = (valoriGenerati, attributiDaSalvare, t, n) ->
+    {
+        //inizializziamo la lista delle balestre leggere e pesanti
+        List<String> listaBalestre = new ArrayList<>();
+        //creo la lista dei proiettili gia inseriti
+        List<String> proiettiliGenerati = valoriGenerati.get("proiettile.nome");
         
+        //creiamo uno statement e lo connettiamo al db
+        Statement stmt = null;
+        try { stmt = conn.createStatement(); }
+        catch (SQLException e) {}
+
+        try //prendiamo tutte le armi corrispondenti al tipo balestra leggera e pesante
+        {
+            ResultSet out = stmt.executeQuery("select * from arma where tipo = \"balestra leggera\" or tipo = \"balestra pesante\";");
+
+            while(out.next())
+            	listaBalestre.add(out.getString(1));
+        }
+        catch (SQLException e) { System.out.println("ERRORE DURANTE LA QUERY"); }
+        
+        Map<String, List<String>> proiettiliMap = new HashMap<>();
+        
+        for (int j = 0; j < n; j++)
+        {
+            //costruiamo la query di inserimento
+            Insert.QueryBuilder q = new Insert.QueryBuilder(t.getName());
+
+            Random r = new Random();
+            
+            //stiamo attenti a controllare se sono state inserite o meno balestre
+            if(listaBalestre.size() > 0) {
+	            String balestra = listaBalestre.get(r.nextInt(listaBalestre.size()));	            
+	            String proiettile = proiettiliGenerati.get(r.nextInt(proiettiliGenerati.size()));   
+	            
+	            if(proiettiliMap.containsKey(balestra))
+	            	proiettiliMap.get(balestra).add(proiettile);
+	            else {
+	        		List<String> rivestimentiList = new ArrayList<>();
+	        		rivestimentiList.add(proiettile);
+	        		proiettiliMap.put(balestra, rivestimentiList);
+	            }	
+	            //buildo la query solo se la balestra selezionata ha meno di 4 proiettili gia equipaggiati
+	            if(proiettiliMap.get(balestra).size() < 5) {
+	            	//buildo la query
+		            q.addValue("arma", balestra);
+		            q.addValue("proiettile", proiettile);
+		            //la eseguo
+		            executeQuery(q.build());
+	            }	            	
+            }
+            else {
+            	System.out.println("Non ci sono balestre nella lista delle armi a cui poter inserire proiettili");
+            	break;
+            }
+        }//fine del for sugli inserimenti        
     };
 
     /**
@@ -846,6 +907,8 @@ public class Database {
                 POSSEDIMENTO_CONSUMER.accept(valoriGenerati, attributiDaSalvare, t, n);
             else if (t.getName().equals("utilizzo_rivestimento"))
             	UTILIZZO_RIVESTIMENTO_CONSUMER.accept(valoriGenerati, attributiDaSalvare, t, n);
+            else if (t.getName().equals("utilizzo_proiettile"))
+            	UTILIZZO_PROIETTILE_CONSUMER.accept(valoriGenerati, attributiDaSalvare, t, n);
             else
                 GENERIC_CONSUMER.accept(valoriGenerati, attributiDaSalvare, t, n);
 
