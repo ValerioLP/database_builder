@@ -3,13 +3,11 @@ package db;
 import data.Account;
 import exceptions.DriverNotFoundException;
 import exceptions.ForeignKeyException;
-import query.Select;
 import utility.Coppia;
 import query.Insert;
 import query.Query;
 import utility.MyConsumer;
 
-import javax.xml.transform.Result;
 import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -398,7 +396,7 @@ public class Database {
 
         try //prendiamo tutte le armi corrispondenti al tipo arco
         {
-            ResultSet out = stmt.executeQuery("select * from arma where tipo = \"arco\";");
+            ResultSet out = stmt.executeQuery("select nome from arma where tipo = \"arco\"");
 
             while(out.next())
                 listaArchi.add(out.getString(1));
@@ -443,7 +441,7 @@ public class Database {
     };
     
     /**
-     * Consumer sulla tabella utilizzo_rivestimento
+     * Consumer sulla tabella utilizzo_proiettile
      */
     private final MyConsumer<Map<String, List<String>>, Set<String>, Table, Integer> UTILIZZO_PROIETTILE_CONSUMER = (valoriGenerati, attributiDaSalvare, t, n) ->
     {
@@ -459,7 +457,7 @@ public class Database {
 
         try //prendiamo tutte le armi corrispondenti al tipo balestra leggera e pesante
         {
-            ResultSet out = stmt.executeQuery("select * from arma where tipo = \"balestra leggera\" or tipo = \"balestra pesante\";");
+            ResultSet out = stmt.executeQuery("select nome from arma where tipo = \"balestra leggera\" or tipo = \"balestra pesante\"");
 
             while(out.next())
             	listaBalestre.add(out.getString(1));
@@ -501,6 +499,103 @@ public class Database {
             	break;
             }
         }//fine del for sugli inserimenti        
+    };
+    
+    /**
+     * Consumer sulla tabella armatura_equipaggiata
+     */
+    private final MyConsumer<Map<String, List<String>>, Set<String>, Table, Integer> ARMATURA_EQUIPAGGIATA_CONSUMER = (valoriGenerati, attributiDaSalvare, t, n) ->
+    {
+    	Random r = new Random();
+        List<String> elmiGenerati = new ArrayList<>();
+        List<String> bustiGenerati = new ArrayList<>();
+        List<String> parabracciaGenerati = new ArrayList<>();
+        List<String> faldeGenerate = new ArrayList<>();
+        List<String> gambaliGenerati = new ArrayList<>();
+        //inizializziamo la lista dei set equipaggiamento gia generati
+        List<String> setEquipaggiamento = valoriGenerati.get("set_equipaggiamento.id");
+        //creo l'insieme dei set gia inseriti in armatura equipaggiata
+        Set<String> setEstratti = new HashSet<>();
+        
+        //creiamo uno statement e lo connettiamo al db
+        Statement stmt = null;
+        try { stmt = conn.createStatement(); }
+        catch (SQLException e) { System.out.println("ERRORE DURANTE LA CONNESSIONE"); }
+
+        //prendiamo tutti i tipi di armatura
+        try 
+        {
+            ResultSet outElmo = stmt.executeQuery("select nome from armatura where tipo = \"elmo\"");
+            ResultSet outBusto = stmt.executeQuery("select nome from armatura where tipo = \"busto\"");
+            ResultSet outParabraccia = stmt.executeQuery("select nome from armatura where tipo = \"parabraccia\"");
+            ResultSet outFalda = stmt.executeQuery("select nome from armatura where tipo = \"falda\"");
+            ResultSet outGambali = stmt.executeQuery("select nome from armatura where tipo = \"gambali\"");            
+
+            while(outElmo.next())
+                elmiGenerati.add(outElmo.getString(1));
+            while(outBusto.next())
+                bustiGenerati.add(outBusto.getString(1));
+            while(outParabraccia.next())
+                parabracciaGenerati.add(outParabraccia.getString(1));
+            while(outFalda.next())
+                faldeGenerate.add(outFalda.getString(1));
+            while(outGambali.next())
+                gambaliGenerati.add(outGambali.getString(1));
+        }       
+        
+        catch (SQLException e) { System.out.println("ERRORE DURANTE LA QUERY"); }    
+        
+        for (int j = 0; j < n; j++)
+        {            
+            String set = "";
+            //controllo che il set non sia gia stato estratto
+            do set = setEquipaggiamento.get(r.nextInt(setEquipaggiamento.size()));
+            while(setEstratti.contains(set));
+            //inserisco nell'insieme dei set estratti il set attuale
+            setEstratti.add(set);
+            
+            if(elmiGenerati.size() > 0) {
+            	String elmo = elmiGenerati.get(r.nextInt(elmiGenerati.size()));
+                //costruiamo la query di inserimento
+                Insert.QueryBuilder q = new Insert.QueryBuilder(t.getName());   
+            	q.addValue("armatura", elmo);
+            	q.addValue("set_equipaggiamento", set);
+            	executeQuery(q.build());
+            	
+            }
+            if(bustiGenerati.size() > 0) {
+            	String busto = bustiGenerati.get(r.nextInt(bustiGenerati.size()));
+                //costruiamo la query di inserimento
+                Insert.QueryBuilder q = new Insert.QueryBuilder(t.getName());   
+            	q.addValue("armatura", busto);
+            	q.addValue("set_equipaggiamento", set);
+            	executeQuery(q.build());
+            }
+            if(parabracciaGenerati.size() > 0) {
+            	String parabraccia = parabracciaGenerati.get(r.nextInt(parabracciaGenerati.size()));
+                //costruiamo la query di inserimento
+                Insert.QueryBuilder q = new Insert.QueryBuilder(t.getName());   
+            	q.addValue("armatura", parabraccia);
+            	q.addValue("set_equipaggiamento", set);
+            	executeQuery(q.build());
+            }
+            if(faldeGenerate.size() > 0) {
+            	String falda = faldeGenerate.get(r.nextInt(faldeGenerate.size()));
+                //costruiamo la query di inserimento
+                Insert.QueryBuilder q = new Insert.QueryBuilder(t.getName());   
+            	q.addValue("armatura", falda);
+            	q.addValue("set_equipaggiamento", set);
+            	executeQuery(q.build());
+            }
+            if(gambaliGenerati.size() > 0) {
+            	String gambali = gambaliGenerati.get(r.nextInt(gambaliGenerati.size()));
+                //costruiamo la query di inserimento
+                Insert.QueryBuilder q = new Insert.QueryBuilder(t.getName());   
+            	q.addValue("armatura", gambali);
+            	q.addValue("set_equipaggiamento", set);
+            	executeQuery(q.build());
+            }        	
+        }//fine del for sugli inserimenti
     };
 
     /**
@@ -909,6 +1004,8 @@ public class Database {
             	UTILIZZO_RIVESTIMENTO_CONSUMER.accept(valoriGenerati, attributiDaSalvare, t, n);
             else if (t.getName().equals("utilizzo_proiettile"))
             	UTILIZZO_PROIETTILE_CONSUMER.accept(valoriGenerati, attributiDaSalvare, t, n);
+            else if (t.getName().equals("armatura_equipaggiata"))
+            	ARMATURA_EQUIPAGGIATA_CONSUMER.accept(valoriGenerati, attributiDaSalvare, t, n);            
             else
                 GENERIC_CONSUMER.accept(valoriGenerati, attributiDaSalvare, t, n);
 
