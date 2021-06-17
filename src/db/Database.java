@@ -525,24 +525,27 @@ public class Database {
         //prendiamo tutti i tipi di armatura
         try 
         {
-            ResultSet outElmo = stmt.executeQuery("select nome from armatura where tipo = \"elmo\"");
-            ResultSet outBusto = stmt.executeQuery("select nome from armatura where tipo = \"busto\"");
-            ResultSet outParabraccia = stmt.executeQuery("select nome from armatura where tipo = \"parabraccia\"");
-            ResultSet outFalda = stmt.executeQuery("select nome from armatura where tipo = \"falda\"");
-            ResultSet outGambali = stmt.executeQuery("select nome from armatura where tipo = \"gambali\"");            
+            ResultSet out = stmt.executeQuery("select nome from armatura where tipo = \"elmo\"");
+            while(out.next())
+                elmiGenerati.add(out.getString(1));
 
-            while(outElmo.next())
-                elmiGenerati.add(outElmo.getString(1));
-            while(outBusto.next())
-                bustiGenerati.add(outBusto.getString(1));
-            while(outParabraccia.next())
-                parabracciaGenerati.add(outParabraccia.getString(1));
-            while(outFalda.next())
-                faldeGenerate.add(outFalda.getString(1));
-            while(outGambali.next())
-                gambaliGenerati.add(outGambali.getString(1));
-        }       
-        
+            out = stmt.executeQuery("select nome from armatura where tipo = \"busto\"");
+            while(out.next())
+                bustiGenerati.add(out.getString(1));
+
+            out = stmt.executeQuery("select nome from armatura where tipo = \"parabraccia\"");
+            while(out.next())
+                parabracciaGenerati.add(out.getString(1));
+
+            out = stmt.executeQuery("select nome from armatura where tipo = \"falda\"");
+            while(out.next())
+                faldeGenerate.add(out.getString(1));
+
+            out = stmt.executeQuery("select nome from armatura where tipo = \"gambali\"");
+
+            while(out.next())
+                gambaliGenerati.add(out.getString(1));
+        }
         catch (SQLException e) { System.out.println("ERRORE DURANTE LA QUERY"); }    
         
         for (int j = 0; j < n; j++)
@@ -561,7 +564,6 @@ public class Database {
             	q.addValue("armatura", elmo);
             	q.addValue("set_equipaggiamento", set);
             	executeQuery(q.build());
-            	
             }
             if(bustiGenerati.size() > 0) {
             	String busto = bustiGenerati.get(r.nextInt(bustiGenerati.size()));
@@ -594,7 +596,7 @@ public class Database {
             	q.addValue("armatura", gambali);
             	q.addValue("set_equipaggiamento", set);
             	executeQuery(q.build());
-            }        	
+            }
         }//fine del for sugli inserimenti
     };
 
