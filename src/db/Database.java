@@ -210,6 +210,12 @@ public class Database {
      */
     private final MyConsumer<Map<String, List<String>>, Set<String>, Table, Integer> WEAPON_CONSUMER = (valoriGenerati, attributiDaSalvare, t, n) ->
     {
+        //prendiamo il nome da equipaggiamento e lo salviamo tra i valori salvati
+        Set<String> equipaggiamentiGeneratiSet = new HashSet<>(valoriGenerati.get("equipaggiamento.nome"));
+        equipaggiamentiGeneratiSet.removeAll(valoriGenerati.get("armatura.nome"));  
+        //creo la lista degli equipaggiamenti gia esistenti nel database diversi da armature gia create
+        List<String> equipaggiamentiGenerati = new ArrayList<>(equipaggiamentiGeneratiSet);
+        
         //per ogni inserimento da fare
         for (int j = 0; j < n; j++)
         {
@@ -217,16 +223,11 @@ public class Database {
             Insert.QueryBuilder q = new Insert.QueryBuilder(t.getName());
 
             Random r = new Random();
-
-            //prendiamo il nome da equipaggiamento e lo salviamo tra i valori salvati
-            Set<String> equipaggiamentiGeneratiSet = new HashSet<>(valoriGenerati.get("equipaggiamento.nome"));
-            equipaggiamentiGeneratiSet.removeAll(valoriGenerati.get("armatura.nome"));  
-            //creo la lista degli equipaggiamenti gia esistenti nel database diversi da armature gia create
-            List<String> equipaggiamentiGenerati = new ArrayList<>(equipaggiamentiGeneratiSet);          
-            //prendo un equipaggiamento random dalla lista degli equipaggiamenti gia esistenti
-            String equipaggiamento = equipaggiamentiGenerati.get(r.nextInt(equipaggiamentiGenerati.size()));
             
             String key = t.getName() + ".nome";
+            
+            //prendo un equipaggiamento random dalla lista degli equipaggiamenti gia esistenti
+            String equipaggiamento = equipaggiamentiGenerati.get(r.nextInt(equipaggiamentiGenerati.size()));
             
             computeMap(valoriGenerati, key, equipaggiamento);
 
@@ -354,17 +355,16 @@ public class Database {
      */
     private final MyConsumer<Map<String, List<String>>, Set<String>, Table, Integer> RIVESTIMENTO_CONSUMER = (valoriGenerati, attributiDaSalvare, t, n) ->
     {
+        //creo la lista degli status gia inseriti
+        List<String> statusGenerati = valoriGenerati.get("status.nome");
+        //creo la lista degli oggetti generati
+        Set<String> oggettiGeneratiSet = new HashSet<>(valoriGenerati.get("crafting.nome"));
+        oggettiGeneratiSet.removeAll(valoriGenerati.get("proiettile.nome"));
+        List<String> oggettiGenerati = new ArrayList<>(oggettiGeneratiSet);
+        
         //per ogni inserimento da fare
         for (int j = 0; j < n; j++)
         {
-            //creo la lista degli status gia inseriti
-            List<String> statusGenerati = valoriGenerati.get("status.nome");
-            //creo la lista degli oggetti generati
-            Set<String> oggettiGeneratiSet = new HashSet<>(valoriGenerati.get("crafting.nome"));
-            oggettiGeneratiSet.removeAll(valoriGenerati.get("proiettile.nome"));
-
-            List<String> oggettiGenerati = new ArrayList<>(oggettiGeneratiSet);
-
             //costruiamo la query di inserimento
             Insert.QueryBuilder q = new Insert.QueryBuilder(t.getName());
 
@@ -381,6 +381,66 @@ public class Database {
         }//fine del for sugli inserimenti
     };
 
+    /**
+     * Consumer sulla tabella utilizzo_rivestimento
+     */
+    private final MyConsumer<Map<String, List<String>>, Set<String>, Table, Integer> UTILIZZO_RIVESTIMENTO_CONSUMER = (valoriGenerati, attributiDaSalvare, t, n) ->
+    {
+        //inizializziamo la lista degli archi
+        List<String> listaArchi = new ArrayList<>();
+        //creo la lista dei rivestimenti gia inseriti
+        List<String> rivestimentiGenerati = valoriGenerati.get("rivestimento.nome");
+        
+        //creiamo uno statement e lo connettiamo al db
+        Statement stmt = null;
+        try { stmt = conn.createStatement(); }
+        catch (SQLException e) {}
+
+        try //prendiamo tutte le armi corrispondenti al tipo arco
+        {
+            ResultSet out = stmt.executeQuery("select * from arma where tipo = \"arco\";");
+
+            while(out.next())
+                listaArchi.add(out.getString(1));
+        }
+        catch (SQLException e) { System.out.println("ERRORE DURANTE LA QUERY"); }
+        
+        Map<String, List<String>> rivestimentiMap = new HashMap<>();
+        
+        for (int j = 0; j < n; j++)
+        {
+            //costruiamo la query di inserimento
+            Insert.QueryBuilder q = new Insert.QueryBuilder(t.getName());
+
+            Random r = new Random();
+
+            if(listaArchi.size() > 0) {
+	            String arco = listaArchi.get(r.nextInt(listaArchi.size()));	            
+	            String rivestimento = rivestimentiGenerati.get(r.nextInt(rivestimentiGenerati.size()));   
+	            
+	            if(rivestimentiMap.containsKey(arco))
+	            	rivestimentiMap.get(arco).add(rivestimento);
+	            else {
+	        		List<String> rivestimentiList = new ArrayList<>();
+	        		rivestimentiList.add(rivestimento);
+	        		rivestimentiMap.put(arco, rivestimentiList);
+	            }	
+	            //buildo la query solo se l'arco selezionato ha meno di 4 rivestimenti gia equipaggiati
+	            if(rivestimentiMap.get(arco).size() < 4) {
+	            	//buildo la query
+		            q.addValue("arma", arco);
+		            q.addValue("rivestimento", rivestimento);
+		            //la eseguo
+		            executeQuery(q.build());
+	            }	            	
+            }
+            else {
+            	System.out.println("Non ci sono archi nella lista delle armi a cui poter inserire rivestimenti");
+            	break;
+            }
+        }//fine del for sugli inserimenti
+        
+    };
 
     /**
      * consumer sulle tabelle possedimento
@@ -471,7 +531,7 @@ public class Database {
             String account;
 
             do
-                account = listaAccount.get(r.nextInt(valoriGenerati.size()));
+                account = listaAccount.get(r.nextInt(listaAccount.size()));
             while (accountCacciatori.get(account).size() == 3);
 
             //genero un nome lo aggiungo alla query e ai valori generati
@@ -490,7 +550,7 @@ public class Database {
             executeQuery(q.build());
         } //fine del for sugli inserimenti
     };
-
+    	
     //-------------------------------------------------------CORPO DELLA CLASSE-----------------------------------------------------------------------//
     
     /**
@@ -784,6 +844,8 @@ public class Database {
                 HUNTER_CONSUMER.accept(valoriGenerati, attributiDaSalvare, t, n);
             else if (t.getName().substring(0,3).equals("pos") || t.getName().equals("set_posseduto") || t.getName().equals("missione_completata"))
                 POSSEDIMENTO_CONSUMER.accept(valoriGenerati, attributiDaSalvare, t, n);
+            else if (t.getName().equals("utilizzo_rivestimento"))
+            	UTILIZZO_RIVESTIMENTO_CONSUMER.accept(valoriGenerati, attributiDaSalvare, t, n);
             else
                 GENERIC_CONSUMER.accept(valoriGenerati, attributiDaSalvare, t, n);
 
