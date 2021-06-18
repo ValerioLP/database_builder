@@ -95,7 +95,7 @@ public class Database {
     private static final String USE = "use ";
 
     private int autoIncremental = 1;
-    private int queryCounter = 1;
+    private int queryCounter = 0;
     private int duplicateEntryCounter = 0;
 
     private String name;

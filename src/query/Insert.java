@@ -43,7 +43,7 @@ public final class Insert extends Query {
          * builder della classe che dopo aver fatto i controlli sulla query la crea
          * @return l'istanza della query costruita
          */
-        public Query build() throws IllegalArgumentException {
+        public Insert build() throws IllegalArgumentException {
             if (attributes.size() == 0)
                 throw new IllegalArgumentException("non sono stati inseriti attributi con i rispettivi valori");
 

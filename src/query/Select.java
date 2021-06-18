@@ -1,5 +1,9 @@
 package query;
 
+import utility.OperationType;
+import utility.Order;
+
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,8 +30,16 @@ public final class Select extends Query {
         private List<String> attributes = new ArrayList<>();
         private List<String> tableNames = new ArrayList<>();
         private List<String> groupBys = new ArrayList<>();
+        private List<Query> unionQueries = new ArrayList<>();
+        private List<OperationType> unionOperations = new ArrayList<>();
+        private List<Query> exceptQueries = new ArrayList<>();
+        private List<OperationType> exceptOperations = new ArrayList<>();
+        private List<Query> intersectQueries = new ArrayList<>();
+        private List<OperationType> intersectOperations = new ArrayList<>();
 
-        private int maxRow;
+        private Order order;
+
+        private int maxRow = 0;
 
         /**
          * costruttore generale della classe builder
@@ -81,13 +93,27 @@ public final class Select extends Query {
         /**
          * metodo che aggiunge un attributo su cui ordinare
          * @param attribute nome dell'attributo su cui ordinare
+         * @param order decide se l'ordine è crescente o descresente
          * @return l'istanza del query builder
          */
-        public QueryBuilder addOrderBy(String attribute) throws IllegalArgumentException
+        public QueryBuilder addOrderBy(String attribute, Order order) throws IllegalArgumentException
         {
             if (orderBy != null)
                 throw new IllegalArgumentException("puoi selezionare un solo parametro su cui ordinare");
             orderBy = attribute.toLowerCase();
+            this.order = order;
+            return this;
+        }
+
+        /**
+         * metodo che aggiunge un attributo su cui ordinare, di default l'ordinamento è crescente
+         * @param attribute nome dell'attributo su cui ordinare
+         * @return l'istanza del query builder
+         * @throws IllegalArgumentException se è gia stato settato un ordine precedentemente
+         */
+        public QueryBuilder addOrderBy(String attribute) throws IllegalArgumentException
+        {
+            addOrderBy(attribute, Order.ASSCENDING);
             return this;
         }
 
@@ -98,7 +124,7 @@ public final class Select extends Query {
          */
         public QueryBuilder limit(int maxRow) throws IllegalArgumentException
         {
-            if (maxRow != 0)
+            if (this.maxRow != 0)
                 throw new IllegalArgumentException("hai gia settato il numero di righe massime per la query");
             this.maxRow = maxRow;
             return this;
@@ -131,10 +157,70 @@ public final class Select extends Query {
         }
 
         /**
+         * metodo che aggiunge lo union tra due query, di default usa distinct come parametro
+         * @param q query su cio fare la union
+         * @return l'istanza delquery builder
+         */
+        public QueryBuilder union(Select q) { return union(q, OperationType.DISTINCT); }
+
+        /**
+         * metodo che aggiunge lo union tra due query
+         * @param q query su cio fare la union
+         * @param operation il tipo di operazione su cui fare la union
+         * @return l'istanza delquery builder
+         */
+        public QueryBuilder union(Select q, OperationType operation)
+        {
+            unionQueries.add(q);
+            unionOperations.add(operation);
+            return this;
+        }
+
+        /**
+         * metodo che aggiunge l'intersect tra due query, di default usa distinct come parametro
+         * @param q query su cio fare l'intersect
+         * @return l'istanza delquery builder
+         */
+        public QueryBuilder intersect(Select q) { return intersect(q, OperationType.DISTINCT); }
+
+        /**
+         * metodo che aggiunge l'intersect tra due query
+         * @param q query su cio fare l'intersect
+         * @param operation il tipo di operazione su cui fare l'intersect
+         * @return l'istanza delquery builder
+         */
+        public QueryBuilder intersect(Select q, OperationType operation)
+        {
+            intersectQueries.add(q);
+            intersectOperations.add(operation);
+            return this;
+        }
+
+        /**
+         * metodo che aggiunge l'except tra due query, di default usa distinct come parametro
+         * @param q query su cio fare l'except
+         * @return l'istanza delquery builder
+         */
+        public QueryBuilder except(Select q) { return except(q, OperationType.DISTINCT); }
+
+        /**
+         * metodo che aggiunge l'except tra due query
+         * @param q query su cio fare l'except
+         * @param operation il tipo di operazione su cui fare l'except
+         * @return l'istanza delquery builder
+         */
+        public QueryBuilder except(Select q, OperationType operation)
+        {
+            exceptQueries.add(q);
+            exceptOperations.add(operation);
+            return this;
+        }
+
+        /**
          * builder della classe che dopo aver fatto i controlli sulla query la crea
          * @return l'istanza della query costruita
          */
-        public Query build()
+        public Select build()
         {
             if (tableNames.size() == 0)
                 throw new IllegalArgumentException("la select prevede almeno una tabella per eseguire la query con la clausula from");
@@ -157,17 +243,26 @@ public final class Select extends Query {
             if (having != null)
                 query.append(" having " + having);
             if (orderBy != null)
-                query.append(" order by " + orderBy);
+                query.append(" order by " + orderBy + " " + order.toString() + " ");
             if (maxRow > 0)
                 query.append(" limit " + maxRow);
+            if (unionQueries.size() > 0)
+                for (int i = 0; i < unionOperations.size(); i++)
+                    query.append(" union " + unionOperations.get(i) + " " + unionQueries.get(i).toString().toLowerCase());
+            if (intersectQueries.size() > 0)
+                for (int i = 0; i < intersectQueries.size(); i++)
+                    query.append(" union " + intersectOperations.get(i) + " " + intersectQueries.get(i).toString().toLowerCase());
+            if (exceptQueries.size() > 0)
+                for (int i = 0; i < exceptQueries.size(); i++)
+                    query.append(" union " + exceptOperations.get(i) + " " + exceptQueries.get(i).toString().toLowerCase());
 
             this.query = query.toString();
 
             return new Select(this);
         }
     }
-    
-	
+
+
     /**
      * Costruttore della classe Select che salva la query generata dal builder
      * @param builder query builder
