@@ -170,7 +170,7 @@ public class Database {
             //inseriamo la regione
             List<String> regioniGenerate = valoriGenerati.get("regione.nome");
             q.addValue("regione", regioniGenerate.get(r.nextInt(regioniGenerate.size())));
-
+            
             //inseriamo il tipo di missione
             String tipoMissione = t.getAttribute("tipo_missione").getType().randomize();
             q.addValue("tipo_missione", tipoMissione);
@@ -194,7 +194,9 @@ public class Database {
 
                 q.addValue("numero_vite", t.getAttribute("numero_vite").getType().randomize());
 
-                q.addValue("npc", t.getAttribute("npc").getType().randomize());
+                //aggiungo npc
+                List<String> npcGenerati = valoriGenerati.get("npc.nome");
+                q.addValue("npc", npcGenerati.get(r.nextInt(npcGenerati.size())));                
 
                 if (tipoMissione.equals("assegnazione")) //se è solo di tipo assegnazione
                     q.addValue("tipo_assegnazione", t.getAttribute("tipo_assegnazione").getType().randomize());
